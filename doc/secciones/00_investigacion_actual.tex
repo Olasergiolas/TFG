@@ -1,0 +1,103 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment LaTeX Template Version 1.0 (5/5/12)
+% This template has been downloaded from: http://www.LaTeXTemplates.com
+% Original author:  Frits Wenneker (http://www.howtotex.com)
+% License: CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+\documentclass[11pt, a4paper, openany]{book}
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage[utf8]{inputenc}
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage{listings} % para insertar código con formato similar al editor
+\usepackage[spanish, es-tabla]{babel} % Selecciona el español para palabras introducidas automáticamente, p.ej. "septiembre" en la fecha y especifica que se use la palabra Tabla en vez de Cuadro
+\usepackage{url} % ,href} %para incluir URLs e hipervínculos dentro del texto (aunque hay que instalar href)
+\usepackage{graphics,graphicx, float} %para incluir imágenes y colocarlas
+\usepackage[gen]{eurosym} %para incluir el símbolo del euro
+\usepackage{cite} %para incluir citas del archivo <nombre>.bib
+\usepackage{enumerate}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{booktabs}
+
+\usepackage[table,xcdraw]{xcolor}
+\hypersetup{
+	colorlinks=true,	% false: boxed links; true: colored links
+	linkcolor=black,	% color of internal links
+	urlcolor=cyan		% color of external links
+}
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead[L]{} % Empty left header
+\fancyhead[C]{} % Empty center header
+\fancyhead[R]{Sergio García Cabrera} % My name
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+%\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt} % Customize the height of the header
+
+\usepackage{titlesec, blindtext, color}
+\definecolor{gray75}{gray}{0.75}
+\newcommand{\hsp}{\hspace{20pt}}
+\titleformat{\chapter}[hang]{\Huge\bfseries}{\thechapter\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
+\setcounter{secnumdepth}{4}
+\usepackage[Lenny]{fncychap}
+
+
+\begin{document}
+
+	\chapter{Estado del arte}
+
+    En este breve documento de carácter temporal se resumirán ideas y contenidos investigados 
+    hasta el momento sobre el \textbf{Estado del arte} del \textit{Fuzzing en dispositivos IoT}.
+
+    \section{Resúmen}
+    En la actualidad el Fuzzing en dispositivos IoT es un campo de investigación considerablemente
+    jóven
+
+    \section{Puntos clave}
+    \begin{itemize}
+        \item Actualmente, la gran mayoría de software dedicado específicamente a fuzzing IoT 
+        provienen de papers y son proyectos poco documentados y abandonados.
+        \item Las principales técnicas generales más utilizadas son:
+        \begin{enumerate}
+            \item Rehosting
+            \item Fuzzing de protocolo de comunicación (MQTT y similares).
+            \item Fuzzing de peticiones HTTP a portal web de administración.
+            \item Fuzzing a snippets de código con Unicorn Engine.
+            \item Binary-only fuzzing en QEMU.
+        \end{enumerate}
+        \item La mayoría de firmware IoT no es Open Source y recientemente vienen cifrados.
+        \item Mayoritariamente aplicaremos Black-box fuzzing.
+    \end{itemize}
+
+    \section{Herramientas}
+
+    \section{Estructuración}
+    En esta sección se comentará de forma general qué se plantea tratar en el TFG actualmente.
+    
+    \begin{itemize}
+        \item Introducción al fuzzing en general
+        \item Estado del arte
+        \item Planificación
+        \item Fuzzing targets
+        \item Aplicación práctica de técnicas de fuzzing IoT
+        \begin{itemize}
+            \item \textbf{Rehosting + Fuzzing HTTP del portal web}: Usar emulación de firmware
+            para levantar el portal web del dispositivo y realizarle fuzzing con las peticiones HTTP.
+            \item \textbf{Fuzzing de protocolos de comunicación IoT como MQTT o CoAP}
+            \item \textbf{Fuzzing de binarios del firmware (AFL QEMU)}: Uso de binwalk para extraer
+            binarios propios del firmware a los que aplicar black-box fuzzing con AFL.
+            \item \textbf{Ingeniería inversa + fuzzing de snippets de código (Unicorn Engine)}
+        \end{itemize}
+        \item Resultados
+        \item Conclusiones
+    \end{itemize}
+
+    \section{Recursos útiles}
+\end{document}
