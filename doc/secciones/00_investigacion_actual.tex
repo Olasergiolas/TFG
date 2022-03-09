@@ -51,12 +51,12 @@
 
 \begin{document}
 
-	\chapter{Estado del arte}
+	\chapter{Estado del arte y planificación}
 
     En este breve documento de carácter temporal se resumirán ideas y contenidos investigados 
     hasta el momento sobre el \textbf{Estado del arte} del \textit{Fuzzing en dispositivos IoT}.
 
-    \section{Resúmen}
+    \section{Resumen}
     En la actualidad el Fuzzing en dispositivos IoT es un campo de investigación considerablemente
     jóven
 
@@ -90,7 +90,8 @@
         realizar el black-box fuzzing de binarios extraídos de firmware con binwalk.
         \item \href{https://github.com/jtpereyda/boofuzz}{Boofuzz}: Framework de fuzzing. Con esto se podría
         desarrollar un fuzzer HTTP para los portales web de los dispositivos.
-        \item \href{https://github.com/AFLplusplus/AFLplusplus}{AFL++} y \href{https://github.com/AFLplusplus/LibAFL}{LibAFL}
+        \item \href{https://github.com/AFLplusplus/AFLplusplus}{AFL++}: Fuzzer que podría usarse en 
+        modo QEMU para el black-box fuzzing.
         \item \href{https://github.com/eclipse/iottestware.fuzzing}{iottestware.fuzzing}: Fuzzing de MQTT y CoAP.
         \item \href{https://github.com/ReFirmLabs/binwalk}{Binwalk}: Para desenpaquetar firmware.
         \item \href{https://github.com/unicorn-engine/unicorn}{Unicorn Engine}: Proyecto hermano de QEMU más centrado en
@@ -125,5 +126,16 @@
     \end{itemize}
 
     \section{Recursos útiles}
+    \begin{itemize}
+        \item \href{https://github.com/andreia-oca/awesome-embedded-fuzzing}{Recopilatorio de información sobre
+         IoT fuzzing}.
+        \item \href{https://blog.attify.com/fuzzing-iot-devices-part-1/}{Caso práctico de uso de AFL++ sobre un 
+        binario extraído de firmware IoT}.
+         \item \href{https://www.youtube.com/playlist?list=PLhixgUqwRTjy0gMuT4C3bmjeZjuNQyqdx}{Uso de fuzzing sobre
+        "sudo" para llegar a CVE-2021-3156}.
+        \item \href{https://fuzzing-project.org/tutorials.html}{The Fuzzing Project}.
+        \item \href{https://github.com/google/fuzzing/blob/master/docs/glossary.md}{Glosario de términos de fuzzing}.
+
+    \end{itemize}
     
 \end{document}
