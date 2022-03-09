@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % \documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
-\documentclass[11pt, a4paper, openany]{book}
+\documentclass[11pt, a4paper, openany]{report}
 \usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
 \usepackage[utf8]{inputenc}
 \usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
@@ -66,7 +66,7 @@
         provienen de papers y son proyectos poco documentados y abandonados.
         \item Las principales técnicas generales más utilizadas son:
         \begin{enumerate}
-            \item Rehosting
+            \item \href{https://rehosti.ng/}{Rehosting}
             \item Fuzzing de protocolo de comunicación (MQTT y similares).
             \item Fuzzing de peticiones HTTP a portal web de administración.
             \item Fuzzing a snippets de código con Unicorn Engine.
@@ -74,9 +74,31 @@
         \end{enumerate}
         \item La mayoría de firmware IoT no es Open Source y recientemente vienen cifrados.
         \item Mayoritariamente aplicaremos Black-box fuzzing.
+        \item En muchas ocasiones es complicado emular firmware IoT debido a las dependencias
+        hardware
     \end{itemize}
 
     \section{Herramientas}
+    
+    Herramientas encontradas hasta el momento que pueden ser de utilidad.
+    \begin{itemize}
+        \item \href{https://github.com/pr0v3rbs/FirmAE}{FirmAE}: Emulador de firmware para dispositivos
+        como routers o cámaras wifi basado en QEMU. Inspirado en Firmadyne pero con mejor compatibilidad, soporte
+        para levantar el portal web del dispositivo y opciones de depuración (gdb y shell). La idea es
+        utilizarlo para fuzzear los portales web.
+        \item \href{https://www.qemu.org/}{QEMU}: Emulador multiplataforma. La idea es utilizarlo para 
+        realizar el black-box fuzzing de binarios extraídos de firmware con binwalk.
+        \item \href{https://github.com/jtpereyda/boofuzz}{Boofuzz}: Framework de fuzzing. Con esto se podría
+        desarrollar un fuzzer HTTP para los portales web de los dispositivos.
+        \item \href{https://github.com/AFLplusplus/AFLplusplus}{AFL++} y \href{https://github.com/AFLplusplus/LibAFL}{LibAFL}
+        \item \href{https://github.com/eclipse/iottestware.fuzzing}{iottestware.fuzzing}: Fuzzing de MQTT y CoAP.
+        \item \href{https://github.com/ReFirmLabs/binwalk}{Binwalk}: Para desenpaquetar firmware.
+        \item \href{https://github.com/unicorn-engine/unicorn}{Unicorn Engine}: Proyecto hermano de QEMU más centrado en
+        emular la ejecución de instrucciones de CPU que en emular el sistema al completo. Esto puede ser interesante si
+        queremos fuzzear un binario que tenga dependencias (hardware, entorno, periféricos, etc.) que no podamos
+        satisfacer, en su lugar, extraemos del binario el fragmento de código que nos interese (reversing con Ghidra) y
+        fuzzeamos solo eso. 
+    \end{itemize}
 
     \section{Estructuración}
     En esta sección se comentará de forma general qué se plantea tratar en el TFG actualmente.
@@ -85,19 +107,23 @@
         \item Introducción al fuzzing en general
         \item Estado del arte
         \item Planificación
-        \item Fuzzing targets
-        \item Aplicación práctica de técnicas de fuzzing IoT
+        \item Fuzzing targets a utilizar
+        \item Posibles casos prácticos de aplicación de técnicas de fuzzing IoT:
         \begin{itemize}
             \item \textbf{Rehosting + Fuzzing HTTP del portal web}: Usar emulación de firmware
             para levantar el portal web del dispositivo y realizarle fuzzing con las peticiones HTTP.
             \item \textbf{Fuzzing de protocolos de comunicación IoT como MQTT o CoAP}
             \item \textbf{Fuzzing de binarios del firmware (AFL QEMU)}: Uso de binwalk para extraer
             binarios propios del firmware a los que aplicar black-box fuzzing con AFL.
-            \item \textbf{Ingeniería inversa + fuzzing de snippets de código (Unicorn Engine)}
+            \item \textbf{Ingeniería inversa + fuzzing de snippets de código (Unicorn Engine)}:
+            Pasar alguno de los binarios del firmware por Ghidra, extraer algún fragmento de código
+            relevante y realizarle fuzzing.
         \end{itemize}
+        \item Desarrollo de algún contenedor o herramienta para facilitar/automatizar el proceso
         \item Resultados
         \item Conclusiones
     \end{itemize}
 
     \section{Recursos útiles}
+    
 \end{document}
