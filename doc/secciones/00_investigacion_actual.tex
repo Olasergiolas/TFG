@@ -54,17 +54,20 @@
 	\chapter{Estado del arte y planificación}
 
     En este breve documento de carácter temporal se resumirán ideas y contenidos investigados 
-    hasta el momento sobre el \textbf{Estado del arte} del \textit{Fuzzing en dispositivos IoT}.
+    hasta el momento sobre el \textbf{Estado del arte} del \textbf{Fuzzing en dispositivos IoT}.
 
-    \section{Resumen}
-    En la actualidad el Fuzzing en dispositivos IoT es un campo de investigación considerablemente
-    jóven
+    \section{Introducción}
+    Siendo el fuzzing una técnica de testeo de software ya consolidada con un gran listado de herramientas e información
+    al respecto, cuando hablamos de fuzzing orientado a dispositivos IoT encontramos que actualmente se trata de
+    un campo de investigación muy reciente para el que no se dispone apenas de herramientas especializadas o de
+    información más allá de papers publicados en el último año (en muchas ocasiones teóricos o con poca utilidad real).
 
     \section{Puntos clave}
     \begin{itemize}
         \item Actualmente, la gran mayoría de software dedicado específicamente a fuzzing IoT 
-        provienen de papers y son proyectos poco documentados y abandonados.
-        \item Las principales técnicas generales más utilizadas son:
+        provienen de papers y son proyectos poco documentados y/o abandonados
+        (véase \href{https://github.com/XtEsco/Snipuzz}{Snipuzz} o \href{https://github.com/zyw-200/FirmAFL}{FirmAFL}). 
+        \item Las principales técnicas que pueden ser aplicadas a fuzzing IoT son:
         \begin{enumerate}
             \item \href{https://rehosti.ng/}{Rehosting}
             \item Fuzzing de protocolo de comunicación (MQTT y similares).
@@ -72,10 +75,10 @@
             \item Fuzzing a snippets de código con Unicorn Engine.
             \item Binary-only fuzzing en QEMU.
         \end{enumerate}
-        \item La mayoría de firmware IoT no es Open Source y recientemente vienen cifrados.
-        \item Mayoritariamente aplicaremos Black-box fuzzing.
-        \item En muchas ocasiones es complicado emular firmware IoT debido a las dependencias
-        hardware
+        \item La mayoría de firmware IoT no es Open Source y recientemente es distribuido como binarios 
+        cifrados.
+        \item Mayoritariamente aplicaremos Black-box o Gray-box fuzzing.
+        \item En muchas ocasiones es complicado emular firmware IoT debido a las dependencias hardware.
     \end{itemize}
 
     \section{Herramientas}
@@ -86,19 +89,22 @@
         como routers o cámaras wifi basado en QEMU. Inspirado en Firmadyne pero con mejor compatibilidad, soporte
         para levantar el portal web del dispositivo y opciones de depuración (gdb y shell). La idea es
         utilizarlo para fuzzear los portales web.
-        \item \href{https://www.qemu.org/}{QEMU}: Emulador multiplataforma. La idea es utilizarlo para 
+        \item \href{https://www.qemu.org/}{QEMU}: Emulador multiplataforma. La idea es utilizarlo junto a AFL++ para 
         realizar el black-box fuzzing de binarios extraídos de firmware con binwalk.
         \item \href{https://github.com/jtpereyda/boofuzz}{Boofuzz}: Framework de fuzzing. Con esto se podría
         desarrollar un fuzzer HTTP para los portales web de los dispositivos.
         \item \href{https://github.com/AFLplusplus/AFLplusplus}{AFL++}: Fuzzer que podría usarse en 
-        modo QEMU para el black-box fuzzing.
+        modo QEMU para el binary-only fuzzing.
         \item \href{https://github.com/eclipse/iottestware.fuzzing}{iottestware.fuzzing}: Fuzzing de MQTT y CoAP.
+        Aunque parece ser un proyecto abandonado la idea es interesante.
         \item \href{https://github.com/ReFirmLabs/binwalk}{Binwalk}: Para desenpaquetar firmware.
         \item \href{https://github.com/unicorn-engine/unicorn}{Unicorn Engine}: Proyecto hermano de QEMU más centrado en
         emular la ejecución de instrucciones de CPU que en emular el sistema al completo. Esto puede ser interesante si
         queremos fuzzear un binario que tenga dependencias (hardware, entorno, periféricos, etc.) que no podamos
-        satisfacer, en su lugar, extraemos del binario el fragmento de código que nos interese (reversing con Ghidra) y
-        fuzzeamos solo eso. 
+        satisfacer, en su lugar, extraemos del binario el fragmento de código que nos interese y fuzzeamos solo eso.
+        \item \href{https://gitlab.com/akihe/radamsa}{Radamsa}: Generador de test cases. Partiendo de un input que
+        se le proporcione, genera variaciones de este pero sin llegar a probarlas sobre el fuzzing target. Puede ser
+        útil para obtener una serie de test cases que utilizar como input para algún script que se desarrolle. 
     \end{itemize}
 
     \section{Estructuración}
@@ -121,7 +127,7 @@
             relevante y realizarle fuzzing.
         \end{itemize}
         \item Desarrollo de algún contenedor o herramienta para facilitar/automatizar el proceso
-        \item Resultados
+        \item Resultados y comparaciones
         \item Conclusiones
     \end{itemize}
 
