@@ -1,0 +1,4 @@
+# environment variables:
+AFL_KILL_SIGNAL=9
+# command line:
+'/home/kali/afltest/AFLplusplus/afl-fuzz' '-i' '/home/kali/afltest/hello_cgi/in' '-o' '/home/kali/afltest/hello_cgi/out' '-Q' '/home/kali/test/firmware_reversing/cross_arch/binaries/hello.cgi'
