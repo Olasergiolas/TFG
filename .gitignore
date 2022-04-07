@@ -313,3 +313,10 @@ package-lock.json
 
 # macOS
 .DS_Store
+
+# Compiled binaries
+bin/
+*.bin
+
+# Pycache
+__pycache__/
