@@ -1,9 +1,11 @@
 import sys, os
 from qiling import Qiling
 from qiling.extensions.afl import ql_afl_fuzz
+from qiling.const import QL_VERBOSE
 
-TARGET_FUNC_ADDR    = 0x10500   # Address of the function we are interested in
-LIBC_START_ADDR     = 0x103cc   # Address where __libc_start_main is being called
+TARGET_FUNC_ADDR    = 0x10598   # Address of the function we are interested in
+TARGET_END_ADDR     = 0x1064c   # End fuzzing when reaching this address
+LIBC_START_ADDR     = 0x10464   # Address where __libc_start_main is being called
 
 def libc_start_main_redirect(ql: Qiling, func_addr = TARGET_FUNC_ADDR):
     ql.reg.write("r0", func_addr)
@@ -21,8 +23,12 @@ def sandbox(path, rootfs, debug, param_file):
         ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[ql.os.exit_point])
     
     ql.hook_address(start_afl, TARGET_FUNC_ADDR)
-    ql.run()
-    os._exit(0)
+    
+    try:
+        ql.run()
+        os._exit(0)
+    except:
+        os._exit(1)
     
 if __name__ == "__main__":
     debug = False
