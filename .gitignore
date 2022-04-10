@@ -320,3 +320,6 @@ bin/
 
 # Pycache
 __pycache__/
+
+# AFL++
+out/
