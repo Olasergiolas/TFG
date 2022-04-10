@@ -1,9 +1,8 @@
-from audioop import add
 import sys
-
-sys.path.append("..")
-
 from qiling import Qiling
+
+TARGET_FUNC_ADDR    = 0x10500   # Address of the function we are interested in
+LIBC_START_ADDR     = 0x103cc   # Address where __libc_start_main is being called
 
 def dumpContext(ql: Qiling):
     print("\nr0: 0x%x" % ql.reg.r0)
@@ -22,24 +21,28 @@ def replace_mem_address(ql: Qiling, target_str, new_str):
 def write_mem_string(ql: Qiling, addr, new_str):
     ql.mem.string(addr, new_str)
     
-def indirect_mem_map_and_replace(ql: Qiling, register_id, new_str):
+def indirect_write_reg_string(ql: Qiling, register_id, new_str):
     address = ql.mem.map_anywhere(len(new_str))
     ql.mem.string(address, new_str)
-    ql.reg.write("r0", address) # == (ql.reg.r0 = address) 
+    ql.reg.write(register_id, address) # == (ql.reg.r0 = address) 
     
-def sandbox(path, rootfs, debug):
-    ql = Qiling(path, rootfs)
-    ql.hook_address(dump_hook, 0x10500)     # Address of the function we are interested in
-    ql.debugger = debug
-    ql.run()
+def libc_start_main_redirect(ql: Qiling, func_addr = TARGET_FUNC_ADDR):
+    ql.reg.write("r0", func_addr)
     
-def dump_hook(ql: Qiling):
+def target_hook(ql: Qiling):
     print("\n--------------\n")
     print("HOOK, PC: 0x%x" % ql.reg.arch_pc)
     print("\nReplacing param...\n")
-    indirect_mem_map_and_replace(ql, "r0", "BBBBBBBBBBBBBBBBBBBBBBB")
+    indirect_write_reg_string(ql, "r0", "BBBBBBBBBBBBBBBBBBBBBBB")
     dumpContext(ql)
     print("\n--------------\n")
+    
+def sandbox(path, rootfs, debug):
+    ql = Qiling(path, rootfs)
+    ql.hook_address(libc_start_main_redirect, LIBC_START_ADDR)
+    ql.hook_address(target_hook, TARGET_FUNC_ADDR)     
+    ql.debugger = debug
+    ql.run()
 
 if __name__ == "__main__":
     debug = False
