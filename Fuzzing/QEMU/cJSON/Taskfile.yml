@@ -1,0 +1,26 @@
+version: '3'
+
+tasks:
+  build:
+    sources:
+      - src/*
+    generates:
+      - bin/*
+    cmds:
+      - mipsel-linux-gnu-gcc -Iinclude  src/harness.c -o bin/harness -lc -lcjson
+      - cmd: echo "Output binary located at bin/harness"
+        silent: true
+
+  run:
+    deps: [build]
+    cmds:
+      - qemu-mipsel -L /usr/mipsel-linux-gnu bin/harness {{.CLI_ARGS}}
+  
+  clean:
+    cmds:
+      - rm bin/harness
+
+  fuzz:
+    deps: [build]
+    cmds:
+      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
