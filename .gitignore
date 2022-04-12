@@ -317,9 +317,14 @@ package-lock.json
 # Compiled binaries
 bin/
 *.bin
+Firmware/
+libs/
 
 # Pycache
 __pycache__/
 
 # AFL++
 out/
+
+# Task
+.task/
