@@ -23,4 +23,4 @@ tasks:
   fuzz:
     deps: [build]
     cmds:
-      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+      - AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
