@@ -33,6 +33,7 @@ int main(int argc, char** argv){
     
     content = read_input(argv[1]);
 
+    cJSON_Minify(content);
     cJSON *json = cJSON_Parse(content);
     res = cJSON_Print(json);
     printf("%s", res);
