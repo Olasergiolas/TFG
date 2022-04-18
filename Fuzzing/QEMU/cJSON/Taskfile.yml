@@ -14,7 +14,7 @@ tasks:
   run:
     deps: [build]
     cmds:
-      - qemu-mipsel -L /usr/mipsel-linux-gnu bin/harness {{.CLI_ARGS}}
+      - qemu-mipsel -L /usr/mipsel-linux-gnu bin/harness {{.CLI_ARGS}} -v
   
   clean:
     cmds:
