@@ -54,10 +54,4 @@ int main(int argc, char** argv){
         printf("cJSON_PrintBuffered method:\n%s\n", print_buf);
         printf("cJSON_PrintBuffered fmt method:\n%s\n", print_buf_fmt);
     }
-
-    cJSON_free(json);
-    free(print);
-    free(print_buf);
-    free(print_buf_fmt);
-    free(content_min);
 }
