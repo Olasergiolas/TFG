@@ -4,6 +4,7 @@ tasks:
   build:
     sources:
       - src/*
+      - bin/harness
     generates:
       - bin/*
     cmds:
@@ -20,7 +21,19 @@ tasks:
     cmds:
       - rm bin/harness
 
+  setup_ramdisk:
+    cmds:
+      - cmd: echo "Root privileges are needed to setup a ramdisk"
+        silent: true
+      - mkdir -p /tmp/afl-ramdisk && sudo chmod 777 /tmp/afl-ramdisk
+      - sudo mount -t tmpfs -o size=512M tmpfs /tmp/afl-ramdisk
+
   fuzz:
     deps: [build]
     cmds:
       - AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+
+  ramdisk_fuzz:
+    deps: [build, setup_ramdisk]
+    cmds:
+      - AFL_TMPDIR=/tmp/afl-ramdisk AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
