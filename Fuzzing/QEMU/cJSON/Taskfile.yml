@@ -37,3 +37,7 @@ tasks:
     deps: [build, setup_ramdisk]
     cmds:
       - AFL_TMPDIR=/tmp/afl-ramdisk AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+
+  minimize:
+    cmds:
+      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/harness @@
