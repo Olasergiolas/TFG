@@ -21,7 +21,7 @@ char* read_input(char* path){
 
     content = (char*)malloc(st.st_size + 1);
     content[st.st_size] = '\0';                                                 // Avoid heap-buffer-overflow in strlen with non null terminated strings
-    if (fread(content, st.st_size, 1, f) != 1)
+    if (fread(content, st.st_size, 1, f) != 1 || strlen(content) == 0)
         exit(1);
     
     return content;
