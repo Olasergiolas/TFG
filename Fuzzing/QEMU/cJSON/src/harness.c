@@ -16,8 +16,12 @@ char* read_input(char* path){
         exit(1);
 
     stat(path, &st);
-    content = (char*)malloc(st.st_size);
-    if (fread(content, st.st_size, 1, f) != 1 || strlen(content) == 0)
+    if (st.st_size == 0)
+        exit(1);
+
+    content = (char*)malloc(st.st_size + 1);
+    content[st.st_size] = '\0';                                                 // Avoid heap-buffer-overflow in strlen with non null terminated strings
+    if (fread(content, st.st_size, 1, f) != 1)
         exit(1);
     
     return content;
@@ -29,7 +33,7 @@ int main(int argc, char** argv){
     char* print_buf_fmt = NULL;
     char* content = NULL;
     char* content_min = NULL;
-    unsigned content_size = 0;
+    size_t content_size = 0;
 
     if (argc < 2 || argc > 3){
         printf("Usage: %s [path-to-json-file]", argv[0]);
@@ -39,7 +43,7 @@ int main(int argc, char** argv){
     content = read_input(argv[1]);
     content_size = strlen(content);
 
-    content_min = (char*)malloc(strlen(content));
+    content_min = (char*)malloc(strlen(content) + 1);
     memcpy(content_min, content, content_size);
     cJSON_Minify(content_min);
 
