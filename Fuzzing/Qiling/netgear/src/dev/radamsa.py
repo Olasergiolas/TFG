@@ -57,5 +57,6 @@ if __name__ == "__main__":
             ts = datetime.datetime.now().strftime("%m-%d-%Y_%H:%M:%S") + ".dmp"
             f = open(ts, "wb+")
             f.write(PAYLOAD)
+            f.close()
             exit(1)
     
