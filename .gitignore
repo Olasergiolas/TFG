@@ -319,6 +319,8 @@ bin/
 *.bin
 Firmware/
 libs/
+qemu_system/
+
 
 # Pycache
 __pycache__/
