@@ -79,9 +79,7 @@ def main(firmware_path, nofuzz, seed):
                 command += '--seed ' + "% s" % seed + ' '
                 seed += 1
             
-            print(command)
             payload = subprocess.check_output(command + firmware_path, shell=True)
-            print(payload)
             xml = craftXML(payload)
             sendUpdate(cookie, xml)
 
