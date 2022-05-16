@@ -45,11 +45,22 @@ def sandbox(path, rootfs, debug):
     ql.run(end=TARGET_END_ADDR)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Fuzz the upnpd daemon using Qiling to emulate the binary")
+    parser.add_argument("-f", "--firmware", help="Firmware in .chk format", nargs=1, required=True)
+    parser.add_argument("-s", "--seed", help="Initial seed for Radamsa", nargs=1, required=False, type=int)
+    args = parser.parse_args()
+    
     path = ["/src/Fuzzing/Qiling/netgear/bin/upnpd"]
-    rootfs = "/src/Firmware/netgear/R7000/squashfs-root"    
+    rootfs = "/src/Firmware/netgear/R7000/squashfs-root"
     
     while True:
-        PAYLOAD = subprocess.check_output('./bin/radamsa fuzz_setup/in/firm134.chk', shell=True)
+        command = './bin/radamsa '
+        
+        if args.seed:
+            command += '--seed ' + "% s" % args.seed[0] + ' '
+            args.seed[0] += 1
+        
+        PAYLOAD = subprocess.check_output(command + args.firmware[0], shell=True)
         try:
             sandbox(path, rootfs, debug=False)
         except:
