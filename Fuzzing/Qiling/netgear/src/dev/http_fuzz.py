@@ -63,18 +63,37 @@ def readPayload(path):
     with open(path, 'rb') as f:
         return f.read()
     
-def main(firmware_path):
+def main(firmware_path, nofuzz, seed):
     cookie = login()
     
-    while(True):
-        payload = subprocess.check_output('./bin/radamsa ' + firmware_path, shell=True)
-        #print(payload)
+    if nofuzz:
+        payload = readPayload(firmware_path)
         xml = craftXML(payload)
         sendUpdate(cookie, xml)
+
+    else:    
+        while(True):
+            command = './bin/radamsa '
+            
+            if seed:
+                command += '--seed ' + "% s" % seed + ' '
+                seed += 1
+            
+            print(command)
+            payload = subprocess.check_output(command + firmware_path, shell=True)
+            print(payload)
+            xml = craftXML(payload)
+            sendUpdate(cookie, xml)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fuzz the upnpd daemon using radamsa by making http requests")
     parser.add_argument("-f", "--firmware", help="Firmware in .chk format", nargs=1, required=True)
+    parser.add_argument("-s", "--seed", help="Initial seed for Radamsa", nargs=1, required=False, type=int)
+    parser.add_argument("--nofuzz", help="Send the given firmware without fuzzing", action="store_true")
     args = parser.parse_args()
+    
+    seed = ''
+    if args.seed:
+        seed = args.seed[0]
 
-    main(args.firmware[0])
+    main(args.firmware[0], args.nofuzz, seed)
