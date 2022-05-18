@@ -31,7 +31,7 @@ tasks:
   fuzz:
     deps: [build]
     cmds:
-      - AFL_DEBUG_CHILD=1 AFL_PATH="/AFLplusplus" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -U -- python3 src/fuzz.py @@
+      - AFL_PATH="/AFLplusplus" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -U -- python3 src/fuzz.py @@
 
   setup_fuzzing:
     desc: Do not send core dump notifications to an external utility (needs administrator privileges)
