@@ -8,7 +8,7 @@ RUN cd ./qemu_mode && CPU_TARGET=mipsel ./build_qemu_support.sh
 
 RUN git clone https://gitlab.com/akihe/radamsa.git && cd radamsa && make && make install
 RUN wget https://github.com/go-task/task/releases/download/v3.12.1/task_linux_amd64.deb
-RUN apt update && apt install -y gdb-multiarch gcc-mipsel-linux-gnu gcc-arm-linux-gnueabi ./task_linux_amd64.deb
+RUN apt update && apt install -y gdb-multiarch gcc-mipsel-linux-gnu gcc-arm-linux-gnueabi qemu-user ./task_linux_amd64.deb
 
 RUN useradd --create-home --shell /bin/bash afl
 USER afl
