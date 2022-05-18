@@ -1,0 +1,44 @@
+version: '3'
+
+tasks:
+  build:
+    sources:
+      - src/main.c
+    generates:
+      - bin/main_arm
+    cmds:
+      - arm-linux-gnueabi-gcc src/main.c -o bin/main_arm
+      - arm-linux-gnueabi-strip bin/main_arm    # Most binaries in embedded devices are stripped of symbols 
+      - cmd: echo "Output binary located at bin/main_arm"
+        silent: true
+
+  run_qemu:
+    deps: [build]
+    desc: Run the binary with a given input string using QEMU
+    cmds:
+      - QEMU_LD_PREFIX=/usr/arm-linux-gnueabi qemu-arm ./bin/main_arm {{.CLI_ARGS}}
+  
+  run_qiling:
+    deps: [build]
+    desc: Run the binary with a given input string using the Qiling script
+    cmds:
+      - python3 ./src/emulate.py {{.CLI_ARGS}}
+
+  clean:
+    cmds:
+      - rm bin/main_arm
+
+  fuzz:
+    deps: [build]
+    cmds:
+      - AFL_DEBUG_CHILD=1 AFL_PATH="/AFLplusplus" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -U -- python3 src/fuzz.py @@
+
+  setup_fuzzing:
+    desc: Do not send core dump notifications to an external utility (needs administrator privileges)
+    cmds:
+      - sudo echo core >/proc/sys/kernel/core_pattern
+  
+  minimize:
+    desc: Minimize a given crashing input file
+    cmds:
+      - AFL_DEBUG_CHILD=1 QEMU_LD_PREFIX=/usr/arm-linux-gnueabi ~/apps/AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/main_arm @@
