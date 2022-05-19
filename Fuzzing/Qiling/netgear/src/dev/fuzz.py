@@ -16,7 +16,7 @@ def sandbox(path, rootfs, debug, param_file):
     def place_input_callback(_ql: Qiling, input: bytes, _):
         address = _ql.mem.map_anywhere(len(input))
         
-        print("\n FILE CONTENT: ", readPayload(sys.argv[1]))
+        #print("\n FILE CONTENT: ", readPayload(sys.argv[1]))
         print("\n\n FILE LENGTH (bytes): ", len(input))
         
         _ql.mem.write(address, input)
@@ -27,10 +27,10 @@ def sandbox(path, rootfs, debug, param_file):
         print("\n\n BYTES STORED IN MEMORY: \n\n", res)
         
     def start_afl(_ql: Qiling):
-        ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[TARGET_END_ADDR])
+        ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[ql.os.exit_point])
     
     ql.hook_address(start_afl, TARGET_FUNC_ADDR)
-    
+
     try:
         ql.run()
         os._exit(0)
@@ -47,7 +47,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         raise ValueError("No input file")
     
-    path = ["/home/sgarcia/TFG/Fuzzing/Qiling/netgear/bin/upnpd"]
-    rootfs = "/home/sgarcia/TFG/Firmware/netgear/R7000/squashfs-root"
+    path = ["./bin/upnpd"]
+    rootfs = "/src/Firmware/netgear/R7000/squashfs-root"
     sandbox(path, rootfs, debug, sys.argv[1])
     
