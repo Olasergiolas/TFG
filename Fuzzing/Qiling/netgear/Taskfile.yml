@@ -11,9 +11,24 @@ tasks:
     cmds:
       - ssh root@127.0.0.1 -p 1234
 
+  emulate_function:
+    desc: Emulate the target function with Qiling
+    cmds:
+      - python3 src/dev/emulate.py {{.CLI_ARGS}}
+
   setup_fuzzing:
     desc: Do not send core dump notifications to an external utility (needs administrator privileges)
     cmds:
       - sudo echo core >/proc/sys/kernel/core_pattern
+
+  afl_fuzz:
+    desc: Start fuzzing upnpd with Qiling and AFL++
+    cmds:
+      - AFL_PATH="~/AFLplusplus/" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -x dict/dictionary -U -- python3 ./src/dev/fuzz.py @@
+
+  radamsa_fuzz:
+    desc: Start fuzzing upnpd with Qiling and Radamsa
+    cmds:
+      - python3 src/dev/radamsa.py -f {{.CLI_ARGS}}
 
   
