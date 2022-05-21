@@ -54,7 +54,7 @@ if __name__ == "__main__":
     rootfs = "/src/Firmware/netgear/R7000/squashfs-root"
     
     while True:
-        command = './bin/radamsa '
+        command = 'radamsa '
         
         if args.seed:
             command += '--seed ' + "% s" % args.seed[0] + ' '
