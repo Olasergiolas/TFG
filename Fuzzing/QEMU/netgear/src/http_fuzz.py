@@ -73,7 +73,7 @@ def main(firmware_path, nofuzz, seed):
 
     else:    
         while(True):
-            command = './bin/radamsa '
+            command = 'radamsa '
             
             if seed:
                 command += '--seed ' + "% s" % seed + ' '
