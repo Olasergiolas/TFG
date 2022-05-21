@@ -2,11 +2,10 @@ version: '3'
 
 tasks:
   build:
+    status:
+      - test -f bin/harness
     sources:
-      - src/*
-      - bin/harness
-    generates:
-      - bin/*
+      - src/harness.c
     cmds:
       - mipsel-linux-gnu-gcc -Iinclude  src/harness.c -o bin/harness -lc -lcjson
       - cmd: echo "Output binary located at bin/harness"
@@ -25,19 +24,18 @@ tasks:
     cmds:
       - cmd: echo "Root privileges are needed to setup a ramdisk"
         silent: true
-      - mkdir -p /tmp/afl-ramdisk && sudo chmod 777 /tmp/afl-ramdisk
-      - sudo mount -t tmpfs -o size=512M tmpfs /tmp/afl-ramdisk
+      - mkdir -p /dev/shm/afl-ramdisk
 
   fuzz:
     deps: [build]
     cmds:
-      - AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+      - AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
 
   ramdisk_fuzz:
     deps: [build, setup_ramdisk]
     cmds:
-      - AFL_TMPDIR=/tmp/afl-ramdisk AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+      - AFL_TMPDIR=/dev/shm/afl-ramdisk AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
 
   minimize:
     cmds:
-      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/harness @@
+      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/harness @@
