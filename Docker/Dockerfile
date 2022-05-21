@@ -10,6 +10,9 @@ RUN git clone https://gitlab.com/akihe/radamsa.git && cd radamsa && make && make
 RUN wget https://github.com/go-task/task/releases/download/v3.12.1/task_linux_amd64.deb
 RUN apt update && apt install -y gdb-multiarch gcc-mipsel-linux-gnu gcc-arm-linux-gnueabi qemu-user qemu-system-arm openssh-client ./task_linux_amd64.deb
 
+ADD libcjson.so* /usr/mipsel-linux-gnu/lib/
+RUN ln -s /usr/mipsel-linux-gnu/lib/libc-2.30.so /usr/mipsel-linux-gnu/lib/libc.so.0
+
 RUN useradd --create-home --shell /bin/bash afl
 USER afl
 
@@ -27,5 +30,7 @@ RUN python -m pip install -e ./bindings/python
 
 RUN wget -O qiling.zip https://github.com/qilingframework/qiling/archive/refs/heads/dev.zip
 RUN pip install --ignore-installed ./qiling.zip
+
+RUN pip install requests
 
 WORKDIR /src
