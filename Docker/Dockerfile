@@ -1,4 +1,6 @@
 FROM aflplusplus/aflplusplus
+
+LABEL description="Docker container meant to be used as a work environment for multi-arch Fuzzing"
 LABEL maintainer="sergiogc5@correo.ugr.es"
 LABEL url="https://github.com/Olasergiolas/TFG"
 
