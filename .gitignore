@@ -314,12 +314,25 @@ package-lock.json
 # macOS
 .DS_Store
 
-# Compiled binaries
+# binaries
 bin/
 *.bin
+*.dmp
+*.chk
+Firmware/
+libs/
+qemu_system/
+*.so
+
+# test files
+**/tenda/
+
 
 # Pycache
 __pycache__/
 
 # AFL++
 out/
+
+# Task
+.task/

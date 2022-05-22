@@ -4,8 +4,10 @@
 #include <stdlib.h>
 
 void printRes(char str[], unsigned len){
+    printf("Ciphered output: ");
     for (unsigned i = 0; i < len; ++i)
-        printf("%02X", str[i]);
+        printf("\\x%02X", str[i]);
+    printf("\n");
 }
 
 void processArgs(char str[]){
@@ -25,8 +27,10 @@ void processArgs(char str[]){
 }
 
 int main(int argc, char* argv[]){
-    if (argc != 2)
+    if (argc != 2){
+        printf("Usage: %s <input_string>\n", argv[0]);
         exit(1);
+    }
     
     sleep(5);
     processArgs(argv[1]);

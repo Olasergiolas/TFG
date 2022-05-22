@@ -1,0 +1,3 @@
+# Dictionary to specify the the magic string in the firmware file
+
+header_firm="*#$^\x00"
