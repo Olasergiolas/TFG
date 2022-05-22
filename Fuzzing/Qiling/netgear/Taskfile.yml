@@ -1,0 +1,34 @@
+version: '3'
+
+tasks:
+  run_qemu_system:
+    desc: Run an ARM64 Debian VM in QEMU
+    cmds:
+      - cd ./qemu_system && qemu-system-aarch64 -m 2G -M virt -cpu max -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd -drive if=none,file=debian-10-openstack-arm64.qcow2,id=hd0 -device virtio-blk-device,drive=hd0 -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp:127.0.0.1:1234-:22,hostfwd=tcp::5000-:5000 -nographic
+
+  ssh_qemu:
+    desc: Connect to the QEMU VM via SSH (only public key login)
+    cmds:
+      - ssh root@127.0.0.1 -p 1234
+
+  emulate_function:
+    desc: Emulate the target function with Qiling
+    cmds:
+      - python3 src/dev/emulate.py {{.CLI_ARGS}}
+
+  setup_fuzzing:
+    desc: Do not send core dump notifications to an external utility (needs administrator privileges)
+    cmds:
+      - sudo echo core >/proc/sys/kernel/core_pattern
+
+  afl_fuzz:
+    desc: Start fuzzing upnpd with Qiling and AFL++
+    cmds:
+      - AFL_PATH="~/AFLplusplus/" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -x dict/dictionary -U -- python3 ./src/dev/fuzz.py @@
+
+  radamsa_fuzz:
+    desc: Start fuzzing upnpd with Qiling and Radamsa
+    cmds:
+      - python3 src/dev/radamsa.py -f {{.CLI_ARGS}}
+
+  
