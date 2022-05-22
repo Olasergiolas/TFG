@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:      
+  run_qemu_system:
+    desc: Run an ARM64 Debian VM in QEMU
+    cmds:
+      - cd ./qemu_system && qemu-system-aarch64 -m 2G -M virt -cpu max -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd -drive if=none,file=debian-10-openstack-arm64.qcow2,id=hd0 -device virtio-blk-device,drive=hd0 -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp:127.0.0.1:1234-:22,hostfwd=tcp::5000-:5000 -nographic
+
+  ssh_qemu:
+    desc: Connect to the QEMU VM via SSH (only public key login)
+    cmds:
+      - ssh root@127.0.0.1 -p 1234
+
+  send_firmware:
+    desc: Test the firmware update process is working
+    cmds:
+      - python3 src/http_fuzz.py --nofuzz -f {{.CLI_ARGS}}
+
+  http_fuzz:
+    desc: Start fuzzing upnpd in QEMU with HTTP requests and Radamsa
+    cmds:
+      - python3 src/http_fuzz.py -f {{.CLI_ARGS}}
