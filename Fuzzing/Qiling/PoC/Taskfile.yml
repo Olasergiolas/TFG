@@ -2,6 +2,7 @@ version: '3'
 
 tasks:
   build:
+    desc: Build the binary to be fuzzed
     sources:
       - src/main.c
     generates:
@@ -25,10 +26,12 @@ tasks:
       - python3 ./src/emulate.py {{.CLI_ARGS}}
 
   clean:
+    desc: Remove the compiled binary
     cmds:
       - rm bin/main_arm
 
   fuzz:
+    desc: Start fuzzing the binary using AFL++ with Qiling
     deps: [build]
     cmds:
       - AFL_PATH="/AFLplusplus" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -U -- python3 src/fuzz.py @@
