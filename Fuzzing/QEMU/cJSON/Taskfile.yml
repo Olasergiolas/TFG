@@ -2,12 +2,11 @@ version: '3'
 
 tasks:
   build:
-    desc: Build dynamically linked fuzzing harness for cJSON
+    desc: Build the fuzzing harness for MIPSel
+    status:
+      - test -f bin/harness
     sources:
-      - src/*
-      - bin/harness
-    generates:
-      - bin/*
+      - src/harness.c
     cmds:
       - mipsel-linux-gnu-gcc -Iinclude  src/harness.c -o bin/harness -lc -lcjson
       - cmd: echo "Output binary located at bin/harness"
@@ -18,33 +17,44 @@ tasks:
     deps: [build]
     cmds:
       - qemu-mipsel -L /usr/mipsel-linux-gnu bin/harness {{.CLI_ARGS}} -v
+
+  qasan_run:
+    desc: Run the harness with a given JSON file with QASAN enabled
+    deps: [build]
+    cmds:
+      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu AFL_INST_LIBS=1 AFL_USE_QASAN=1 /AFLplusplus/afl-qemu-trace ./bin/harness {{.CLI_ARGS}}
   
   clean:
-    desc: Remove the compiled harness
+    desc: Remove the harness binary
     cmds:
       - rm bin/harness
 
   setup_ramdisk:
-    desc: Create a ramdisk to alleviate I/O strain
+    desc: Create a ramdisk to store input files when fuzzing
+    status:
+      - test -d /dev/shm/afl-ramdisk
     cmds:
-      - cmd: echo "Root privileges are needed to setup a ramdisk"
-        silent: true
-      - mkdir -p /tmp/afl-ramdisk && sudo chmod 777 /tmp/afl-ramdisk
-      - sudo mount -t tmpfs -o size=512M tmpfs /tmp/afl-ramdisk
+      - mkdir -p /dev/shm/afl-ramdisk
 
   fuzz:
-    desc: Start fuzzing using the harness and AFL++ in QEMU mode
+    desc: Start fuzzing with AFL++ QEMU mode
     deps: [build]
     cmds:
-      - AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+      - AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+
+  qasan_fuzz:
+    desc: Enable QASAN when fuzzing
+    deps: [build]
+    cmds:
+      - AFL_USE_QASAN=1 AFL_DEBUG_CHILD=1 AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
 
   ramdisk_fuzz:
-    desc: Fuzz reading inputs from ramdisk
+    desc: Fuzz using a ramdisk
     deps: [build, setup_ramdisk]
     cmds:
-      - AFL_TMPDIR=/tmp/afl-ramdisk AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
+      - AFL_TMPDIR=/dev/shm/afl-ramdisk AFL_INST_LIBS=1 QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -- ./bin/harness @@
 
   minimize:
     desc: Minimize an input that produces a crash
     cmds:
-      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu ~/apps/AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/harness @@
+      - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/harness @@
