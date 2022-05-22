@@ -322,6 +322,7 @@ bin/
 Firmware/
 libs/
 qemu_system/
+*.so
 
 # test files
 **/tenda/
