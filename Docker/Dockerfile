@@ -2,13 +2,15 @@ FROM aflplusplus/aflplusplus
 LABEL maintainer="sergiogc5@correo.ugr.es"
 LABEL url="https://github.com/Olasergiolas/TFG"
 
-WORKDIR /AFLplusplus
-RUN make distrib
-RUN cd ./qemu_mode && CPU_TARGET=mipsel ./build_qemu_support.sh
-
+WORKDIR /tmp
 RUN git clone https://gitlab.com/akihe/radamsa.git && cd radamsa && make && make install
 RUN wget https://github.com/go-task/task/releases/download/v3.12.1/task_linux_amd64.deb
 RUN apt update && apt install -y gdb-multiarch gcc-mipsel-linux-gnu gcc-arm-linux-gnueabi qemu-user qemu-system-arm openssh-client ./task_linux_amd64.deb
+
+WORKDIR /AFLplusplus
+RUN make distrib
+WORKDIR /AFLplusplus/qemu_mode
+RUN CPU_TARGET=mipsel ./build_qemu_support.sh
 
 ADD libcjson.so* /usr/mipsel-linux-gnu/lib/
 RUN ln -s /usr/mipsel-linux-gnu/lib/libc-2.30.so /usr/mipsel-linux-gnu/lib/libc.so.0
