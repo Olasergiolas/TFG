@@ -52,5 +52,7 @@ The following main discoveries were made while fuzzing the library.
 <img src="../../../Pictures/cJSON/iotop_before.png">
 <img src="../../../Pictures/cJSON/iotop_after.png">
 
-- After a few minutes of fuzzing the harness some crashes started to show up in AFL++'s interface, but none of these crashes could not be reproduced afterwards. Leveraging the fact that we have access to the source code of the library, a second binary was compiled targeting x64 this time. Surprisingly, this one did not crash once after fuzzing for hours so we can conclude that there must be a bug in the AFL++'s QEMU MIPS implementation. An issue will be created in [AFL++'s Github](https://github.com/AFLplusplus/AFLplusplus) repository and everything needed to reproduce the issue will be provided.
-- QASAN
+- After a few minutes of fuzzing the harness some crashes started to show up in AFL++'s interface, but none of these crashes could be reproduced afterwards. Leveraging the fact that we have access to the source code of the library, a second binary was compiled targeting x64 this time. Surprisingly, this one did not crash once after fuzzing for hours so we can conclude that there must be a bug in the AFL++'s QEMU MIPS implementation. An issue will be created in [AFL++'s Github](https://github.com/AFLplusplus/AFLplusplus) repository and everything needed to reproduce the issue will be provided.
+- As we mentioned before, QASAN always detects memory errors and thus crashes when running the harness regardless of the JSON input file used. As a consequence, fuzzing using QASAN becomes impossible due to the fact that every test run that AFL++ performs prior to fuzzing crashes with memory errors and the fuzzing process cannot start.
+
+    <img src="../../../Pictures/cJSON/qasan_fuzz.png">
