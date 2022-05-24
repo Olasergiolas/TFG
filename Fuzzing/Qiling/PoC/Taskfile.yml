@@ -13,13 +13,13 @@ tasks:
       - cmd: echo "Output binary located at bin/main_arm"
         silent: true
 
-  run_qemu:
+  qemu_run:
     deps: [build]
     desc: Run the binary with a given input string using QEMU
     cmds:
       - QEMU_LD_PREFIX=/usr/arm-linux-gnueabi qemu-arm ./bin/main_arm {{.CLI_ARGS}}
   
-  run_qiling:
+  qiling_run:
     deps: [build]
     desc: Run the binary with a given input string using the Qiling script
     cmds:
@@ -30,11 +30,17 @@ tasks:
     cmds:
       - rm bin/main_arm
 
-  fuzz:
+  qiling_fuzz:
     desc: Start fuzzing the binary using AFL++ with Qiling
     deps: [build]
     cmds:
       - AFL_PATH="/AFLplusplus" PATH="$AFL_PATH:$PATH" afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -U -- python3 src/fuzz.py @@
+
+  qemu_fuzz:
+    desc: Start fuzzing the binary using AFL++ with QEMU (slowest)
+    deps: [build]
+    cmds:
+      - QEMU_LD_PREFIX=/usr/arm-linux-gnueabi /AFLplusplus/afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -Q -t 7000 -- ./bin/main_arm @@
 
   setup_fuzzing:
     desc: Do not send core dump notifications to an external utility (needs administrator privileges)
