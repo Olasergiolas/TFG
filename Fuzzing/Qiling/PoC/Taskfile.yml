@@ -9,7 +9,7 @@ tasks:
       - bin/main_arm
     cmds:
       - arm-linux-gnueabi-gcc src/main.c -o bin/main_arm
-      - arm-linux-gnueabi-strip bin/main_arm    # Most binaries in embedded devices are stripped of symbols 
+      #- arm-linux-gnueabi-strip bin/main_arm    # Most binaries in embedded devices are stripped of symbols 
       - cmd: echo "Output binary located at bin/main_arm"
         silent: true
 

@@ -8,7 +8,7 @@ TARGET_END_ADDR     = 0x1068c   # End fuzzing when reaching this address
 LIBC_START_ADDR     = 0x10494   # Address where __libc_start_main is being called
 
 def libc_start_main_redirect(ql: Qiling, func_addr = TARGET_FUNC_ADDR):
-    ql.reg.write("r0", func_addr)
+    ql.arch.regs.write("r0", func_addr)
 
 def sandbox(path, rootfs, debug, param_file):    
     ql = Qiling(path, rootfs)
@@ -17,7 +17,7 @@ def sandbox(path, rootfs, debug, param_file):
     def place_input_callback(_ql: Qiling, input: bytes, _):
         address = _ql.mem.map_anywhere(len(input))
         _ql.mem.write(address, input)
-        _ql.reg.write("r0", address)
+        _ql.arch.regs.write("r0", address)
     
     def start_afl(_ql: Qiling):
         ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[_ql.os.exit_point])
