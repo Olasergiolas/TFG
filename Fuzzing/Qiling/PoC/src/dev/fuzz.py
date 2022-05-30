@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         raise ValueError("No input file")
     
-    path = ["/src/Fuzzing/Qiling/PoC/bin/main_arm", "ABC"]
+    path = ["bin/main_arm", "ABC"]
     rootfs = "/usr/arm-linux-gnueabi"
     sandbox(path, rootfs, debug, sys.argv[1])
     
