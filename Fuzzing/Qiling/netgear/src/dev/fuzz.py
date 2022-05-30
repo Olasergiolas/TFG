@@ -16,18 +16,18 @@ def sandbox(path, rootfs, debug, param_file):
     def place_input_callback(_ql: Qiling, input: bytes, _):
         address = _ql.mem.map_anywhere(len(input))
         
-        #print("\n FILE CONTENT: ", readPayload(sys.argv[1]))
+        print("\n REAL FILE CONTENT: ", readPayload(sys.argv[1]))
         print("\n\n FILE LENGTH (bytes): ", len(input))
         
         _ql.mem.write(address, input)
         _ql.arch.regs.write("r0", address)
         
         res = _ql.mem.read(address, len(input));
-        print("\n\n FUNCTION INPUT BYTES: \n\n", input)
+        print("\n\n place_input_callback INPUT BYTES: \n\n", input)
         print("\n\n BYTES STORED IN MEMORY: \n\n", res)
         
     def start_afl(_ql: Qiling):
-        ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[ql.os.exit_point])
+        ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[TARGET_END_ADDR])
     
     ql.hook_address(start_afl, TARGET_FUNC_ADDR)
 
