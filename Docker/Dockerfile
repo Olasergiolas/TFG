@@ -14,7 +14,6 @@ RUN make distrib
 WORKDIR /AFLplusplus/qemu_mode
 RUN CPU_TARGET=mipsel ./build_qemu_support.sh
 
-ADD libcjson.so* /usr/mipsel-linux-gnu/lib/
 RUN ln -s /usr/mipsel-linux-gnu/lib/libc-2.30.so /usr/mipsel-linux-gnu/lib/libc.so.0
 
 RUN useradd --create-home --shell /bin/bash afl

@@ -58,3 +58,8 @@ tasks:
     desc: Minimize an input that produces a crash
     cmds:
       - QEMU_LD_PREFIX=/usr/mipsel-linux-gnu /AFLplusplus/afl-tmin -Q -i {{.CLI_ARGS}} -o {{.CLI_ARGS}}_minimized -- ./bin/harness @@
+
+  setup_libs:
+    desc: Place libs passed as argument to the proper path for QEMU to load them (mainly intended to place cJSON libs)
+    cmds:
+      - cp {{.CLI_ARGS}} /usr/mipsel-linux-gnu/lib/
