@@ -3,6 +3,8 @@ name: Publish Docker image on Dockerhub
 on:
   push:
     branches: [ master ]
+    paths:
+      - Docker/Dockerfile
 
 jobs:
   push_to_registry:
