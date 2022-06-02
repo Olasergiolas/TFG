@@ -1,43 +1,77 @@
 \thispagestyle{empty}
 
 \begin{center}
-{\large\bfseries Título \\ Subtítulo }\\
+{\large\bfseries Introducción al Fuzzing, uso y estrategias de Fuzzing
+para encontrar vulnerabilidades en dispositivos IoT}\\
 \end{center}
 \begin{center}
-Nombre Del Estudiante\\
+Sergio García Cabrera\\
 \end{center}
 
 %\vspace{0.7cm}
 
 \vspace{0.5cm}
-\noindent{\textbf{Palabras clave}: \textit{software libre}
+\noindent{\textbf{Palabras clave}: \textit{Fuzzing, IoT, Emulación, Vulnerabilidad, Sistemas empotrados,
+,Black-box fuzzing, AFL++, QEMU, Open Source.}
 \vspace{0.7cm}
 
 \noindent{\textbf{Resumen}\\
-	
+Dado el creciente incremento de dispositivos conectados a internet a nuestro alrededor y la cada vez más 
+sensible información que estos manejan, es una necesidad innegable el invertir una mayor cantidad de
+recursos en la protección y evaluación de la seguridad de estos productos. Por desgracia, la seguridad de 
+estos es en numerosas ocasiones dejada de lado debido a diferentes motivos como las 
+grandes restricciones de rendimiento y de entorno normalmente asociadas a dichos dispositivos o los intentos por parte
+de los fabricantes de abaratar costes de producción en productos low-cost del internet de las cosas. \\
 
+Esta misma tendencia se puede observar respecto a la técnica del fuzzing. Aunque el fuzzing se ha consolidado 
+en los últimos años como una técnica estándar en la industria del 
+software gracias a su gran capacidad para encontrar fallos y vulnerabilidades, el fuzzing orientado a 
+dispositivos IoT y por ende, dispositivos empotrados es un campo de investigación considerablemente 
+reciente en el que aún se están dando los primeros pasos. Sumando a las causas descritas anteriormente, 
+esto se debe a que aplicar técnicas de fuzzing a este tipo de dispositivos supone nuevos retos como la 
+dificultad de obtener feedback sobre la ejecución de los bloques básicos de código sin disponer del código
+fuente original.
+
+En este proyecto se investigarán y aplicarán diversos enfoques y técnicas estado del arte con el fin de 
+conocer el estado actual de esta novedosa rama del fuzzing orientado a dispositivos IoT.
 \cleardoublepage
 
 \begin{center}
-	{\large\bfseries Same, but in English}\\
+	{\large\bfseries Introduction to Fuzzing, use cases and strategies 
+	to find vulnerabilities in IoT devices}\\
 \end{center}
 \begin{center}
-	Student's name\\
+	Sergio García Cabrera\\
 \end{center}
 \vspace{0.5cm}
-\noindent{\textbf{Keywords}: \textit{open source}, \textit{floss}
+\noindent{\textbf{Keywords}: \textit{Fuzzing, IoT, Emulation, Vulnerability, Embedded systems,
+,Black-box fuzzing, AFL++, QEMU, Open Source.}
 \vspace{0.7cm}
 
 \noindent{\textbf{Abstract}\\
+Given the ever-increasing rise in the number of devices connected to the internet around us and the fact 
+that nowadays these are made to handle more sensible information, it is clear that it has become a 
+necessity to invest more time and resources in the protection and evaluation of the security of these 
+products. Unfortunately, the security measures found on these are often left aside due to reasons such as 
+the performance and environment constraints commonly associated with these kinds of devices or manufacturers
+trying to reduce production costs of low-cost IoT devices.\\
 
+The same trend can be observed regarding fuzzing. Even though fuzzing has consolidated as an industry 
+standard thanks to its great success finding bugs and vulnerabilities in code, IoT oriented 
+fuzzing and, by extension, embedded oriented fuzzing is a research field that is not nearly as mature.
+Adding up to the aforementioned issues, applying fuzzing techniques to this kind of devices comes with new 
+challenges such as the difficulty to get feedback about execution of basic code blocks due to the lack of 
+original source code.
 
+In this thesis, different state-of-the-art techniques and approaches will be discussed and applied in order
+to learn about the current state of such a novel research field that is IoT oriented fuzzing.
 \cleardoublepage
 
 \thispagestyle{empty}
 
 \noindent\rule[-1ex]{\textwidth}{2pt}\\[4.5ex]
 
-D. \textbf{Tutora/e(s)}, Profesor(a) del ...
+D. \textbf{Gustavo Romero López}, Profesor(a) del ...
 
 \vspace{0.5cm}
 
@@ -45,13 +79,14 @@ D. \textbf{Tutora/e(s)}, Profesor(a) del ...
 
 \vspace{0.5cm}
 
-Que el presente trabajo, titulado \textit{\textbf{Chief}},
-ha sido realizado bajo mi supervisión por \textbf{Estudiante}, y autorizo la defensa de dicho trabajo ante el tribunal
+Que el presente trabajo, titulado \textit{\textbf{Introducción al Fuzzing, uso y estrategias de Fuzzing
+para encontrar vulnerabilidades en dispositivos IoT}},
+ha sido realizado bajo mi supervisión por \textbf{Sergio García Cabrera}, y autorizo la defensa de dicho trabajo ante el tribunal
 que corresponda.
 
 \vspace{0.5cm}
 
-Y para que conste, expiden y firman el presente informe en Granada a Junio de 2018.
+Y para que conste, expiden y firman el presente informe en Granada a Junio de 2022.
 
 \vspace{1cm}
 
@@ -59,10 +94,13 @@ Y para que conste, expiden y firman el presente informe en Granada a Junio de 20
 
 \vspace{5cm}
 
-\noindent \textbf{(nombre completo tutor/a/es)}
+\noindent \textbf{Gustavo Romero López}
 
 \chapter*{Agradecimientos}
-
+Quiero agradecer a mi familia por haberme acompañado y apoyado durante todo este viaje, especialmente
+en esos momentos en los que creía que no sería capaz de seguir adelante. A mis amigos y mi pareja por 
+ayudarme cuando tanto necesitaba desconectar y despejarme y por último a mi tutor, Gustavo Romero López
+por orientarme pacientemente cuando ni siquiera sabía cómo enfocar el TFG.
 
 
 
