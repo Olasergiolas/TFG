@@ -49,7 +49,7 @@ if __name__ == "__main__":
     if args.firmware:
         PAYLOAD = readPayload(args.firmware[0])
     
-    path = ["/home/sgarcia/TFG/Fuzzing/Qiling/netgear/bin/upnpd"]
-    rootfs = "/home/sgarcia/TFG/Firmware/netgear/R7000/squashfs-root"
+    path = ["bin/upnpd"]
+    rootfs = "/src/Firmware/netgear/R7000/squashfs-root"
     sandbox(path, rootfs, args.gdb)
     

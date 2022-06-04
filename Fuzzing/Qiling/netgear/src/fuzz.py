@@ -58,7 +58,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         raise ValueError("No input file")
     
-    path = ["/home/sgarcia/TFG/Fuzzing/Qiling/netgear/bin/upnpd"]
-    rootfs = "/home/sgarcia/TFG/Firmware/netgear/R7000/squashfs-root"
+    path = ["bin/upnpd"]
+    rootfs = "/src/Firmware/netgear/R7000/squashfs-root"
     sandbox(path, rootfs, debug, sys.argv[1])
     

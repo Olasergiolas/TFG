@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--seed", help="Initial seed for Radamsa", nargs=1, required=False, type=int)
     args = parser.parse_args()
     
-    path = ["/src/Fuzzing/Qiling/netgear/bin/upnpd"]
+    path = ["bin/upnpd"]
     rootfs = "/src/Firmware/netgear/R7000/squashfs-root"
     
     while True:
