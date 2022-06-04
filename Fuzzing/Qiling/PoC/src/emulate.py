@@ -57,7 +57,7 @@ if __name__ == "__main__":
     if args.replace:
         INPUT_REPLACE = INPUT_REPLACE = args.replace
     
-    path = ["/src/Fuzzing/Qiling/PoC/bin/main_arm", args.input[0]]
+    path = ["bin/main_arm", args.input[0]]
     rootfs = "/usr/arm-linux-gnueabi"
     sandbox(path, rootfs, args.gdb)
     

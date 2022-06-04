@@ -5,7 +5,7 @@ from qiling.const import QL_VERBOSE
 
 TARGET_FUNC_ADDR    = 0x105d8   # Address of the function we are interested in
 TARGET_END_ADDR     = 0x1064c   # End fuzzing when reaching this address
-LIBC_START_ADDR     = 0x10680   # Address where __libc_start_main is being called
+LIBC_START_ADDR     = 0x10494   # Address where __libc_start_main is being called
 
 def libc_start_main_redirect(ql: Qiling, func_addr = TARGET_FUNC_ADDR):
     ql.arch.regs.write("r0", func_addr)
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     if len(sys.argv) == 1:
         raise ValueError("No input file")
     
-    path = ["/src/Fuzzing/Qiling/PoC/bin/main_arm", "ABC"]
+    path = ["bin/main_arm", "ABC"]
     rootfs = "/usr/arm-linux-gnueabi"
     sandbox(path, rootfs, debug, sys.argv[1])
     
