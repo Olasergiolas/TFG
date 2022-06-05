@@ -1,3 +1,50 @@
 \chapter{Introducción}
 
-Este proyecto es software libre, y está liberado con la licencia \cite{gplv3}.
+\section{Motivación}
+En la actualidad, podemos fácilmente apreciar cómo los fabricantes de productos de todo tipo de
+ámbitos como pueden ser la medicina, la industria, la seguridad o incluso el hogar, apuestan cada vez 
+más por desarrollar nuevas iteraciones de estos productos con funcionalidades comúnmente agrupadas bajo el 
+adjetivo de inteligentes o ''smart''. Este nuevo paradigma de dispositivos inteligentes capaces de 
+comunicarse entre sí y trabajar de forma coordinada conocido como el ''Internet de las Cosas'' o IoT por 
+sus siglas en Inglés ha experimentado un crecimiento descontrolado durante la última década debido 
+principalmente a los avances realizados en campos como las telecomunicaciones o el diseño de procesadores y
+SoCs con una mayor potencia y menor consumo. Tal es el crecimiento que actualmente se espera que la industria del
+IoT pueda alcanzar un valor económico potencial de entre 5.5 y 12.6 miles de millones de dólares para
+2030 \cite{McKinsey}.
+\bigskip
+Dispositivos no tan novedosos como cámaras IP o routers, al igual que otros más 
+propios de la última década como asistentes de voz, Smart TVs o wearables son todos ejemplos 
+de dispositivos IoT que han conseguido ser una parte esencial de nuestro día a día facilitándonos
+multitud de tareas. Aunque no es secreto que este tipo de dispositivos suelen basar su funcionalidad en 
+la recopilación y comunicación de información que puede llegar a ser considerada sensible, es una realidad 
+que los fabricantes de dichos dispositivos no están realizando una inversión suficiente en su seguridad y 
+la de los datos que manejan. Un claro ejemplo de ello es el hecho de que en Europa, casi la mitad 
+de dispositivos del fabricante TP-Link utiliza credenciales por defecto \cite{Deepak}, sin forzar al usuario 
+a cambiarlas o incluso el gran número de estos que son puestos a la venta a día de hoy utilizando software 
+considerablemente desactualizado y vulnerable como pueden ser versiones del kernel de linux publicadas hace cerca de 
+diez años y ya consideradas ''End Of Life''. Problemas como los mencionados dan lugar a grandes brechas de
+seguridad, que explotadas por un atacante pueden tener consecuencias desastrosas. Ejemplo de ellos es 
+Mirai\cite{mirai}, un malware que identificaba dispositivos IoT como routers o cámaras IP que usaran credenciales 
+por defecto conocidas para infectarlos y crear una botnet que permitiera realizar ataques DDoS a gran escala.\\
+
+Los motivos de esta pasividad por parte de un gran número de fabricantes de dispositivos IoT respecto a la 
+seguridad de sus productos son varios. En primer lugar, es necesario tener en cuenta que estamos ante una industria relativamente 
+joven, en claro auge y con un gran interés para todo tipo de compañías que quieren introducirse en ella diseñando 
+nuevos productos pero con la dificultad de carecer de experiencia previa en el sector. Esta falta de experiencia puede
+llevar a tomar decisiones como el realizar lanzamientos apresurados en los que la seguridad del producto no haya 
+sido evaluada adecuadamente o el buscar reducir costes obviando aspectos de seguridad que puedan afectar a 
+la tríada CIA (Confidentiality, Integrity, Availability) en productos de gamas low-cost donde el margen de beneficio 
+es más estrecho. Por último, otro de los principales factores a tener en cuenta es lo sumamente limitado que 
+está en la mayoría de ocasiones el IoT respecto a factores como rendimiento, limitado por los bajos consumos 
+requeridos, memoria, limitada por costes/tamaño del dispositivo o tiempo, limitado en sistemas de tiempo real. 
+Se ha demostrado como para un STM32, hacer uso de un algoritmo de cifrado para las comunicaciones puede suponer 
+penalizaciones de hasta 111ms\cite{performance} para cifrar y descifrar 1KB de información usando un algoritmo como AES\_CBC.
+
+
+POR QUÉ EL FUZZING ESTÁ GUAY:
+- Dispositivos que trabajan constantemente con inputs de información
+- Proceso ''automatizado''
+- Se asemeja a ataques realizados comúnmente con paquetes de información que rompen la estructura esperada.
+
+\section{Objetivos}
+\section{Estructura}
