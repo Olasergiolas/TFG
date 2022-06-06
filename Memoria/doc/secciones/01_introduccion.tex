@@ -51,18 +51,44 @@ sea información en formato JSON, XML, un mensaje MQTT, se trata de inputs que p
 de forma exhaustiva para asegurar un correcto funcionamiento incluso si la información recibida no respeta el formato o protocolo 
 utilizado. Por ejemplo, aplicando fuzzing sobre un componente del firmware de un dispositivo IoT encargado de parsear información en formato JSON
 se podría detectar si este presenta un comportamiento indeterminado en casos concretos como al recibir datos con caracteres especiales, lo cual
-podría dar lugar a vulnerabilidades potenciales como denegación de servicio, corrupción de memoria o filtración de información. Cabe destacar 
-que emplear fuzzing orientado a IoT presenta sus propios retos y complicaciones no tan presentes en el fuzzing tradicional. Ejemplos de estos retos son el
-disponer exclusivamente de binarios compilados para otras arquitecturas, la baja velocidad de ejecución al fuzzear o la dificultad de aplicar rehosting
-entre otros y serán discutidos a lo largo del documento.\bigskip
+podría dar lugar a vulnerabilidades potenciales como denegación de servicio, corrupción de memoria o filtración de información. Respecto a casos reales
+de vulnerabilidades críticas encontradas en dispositivos IoT a través de fuzzing podemos destacar entre otros los descubrimientos realizados por la firma 
+de ciberseguridad ''Comsecuris'', que gracias a aplicar fuzzing descubrieron una vulnerabilidad en el gestor de red usado en el 
+sistema operativo de los vehículos Tesla la cual permitía a un atacante realizar ejecución de código de forma remota y sin autenticar \cite{TeslaMCU}.
+
+Cabe mencionar que emplear fuzzing orientado a IoT también presenta sus propios retos y complicaciones no tan presentes en el fuzzing tradicional. 
+Ejemplos de estos retos son el disponer exclusivamente de binarios compilados para otras arquitecturas, la baja velocidad de ejecución al fuzzear o la 
+dificultad de aplicar rehosting entre otros y serán discutidos a lo largo del documento.\bigskip
 
 En resumen, el fuzzing es una técnica que ha demostrado excelentes resultados a la hora de identificar bugs 
 que hubieran sido difícilmente encontrados a través de otros medios y que, aún presentando retos difíciles de abordar, resulta de especial interés en
-el campo del IoT ya que facilitaría la mejora de los estándares de seguridad actuales de la industria.
+el campo del IoT ya que facilitaría la mejora de los estándares de seguridad actuales de la industria. Durante este proyecto trataremos de investigar
+e implementar algunos de los distintos enfoques existentes en la actualidad del fuzzing IoT orientado a código y se intentará proponer 
+soluciones a los retos planteados anteriormente.
 
 \section{Objetivos}
-- Investigar el estado actual de una técnica estado del arte
+El objetivo principal de este proyecto, es llevar a cabo una investigación sobre el estado del arte de la aplicación de fuzzing de código en dispositivos IoT
+a través de emulación, es decir, ejecutando el código a fuzzear sin requerir el hardware del dispositivo en cuestión.
+Además, como objetivos complementarios a cumplir durante la realización de este proyecto se plantea lo siguiente:
+\begin{itemize}
+    \item Estudiar y poner en práctica los enfoques más punteros y 
+    conceptos relacionados al respecto como el reversing de firmware, rehosting, emulación de sistema, binarios y de instrucciones máquina, 
+    sanitizadores de memoria, black-box y grey-box fuzzing. Esto se llevará a cabo desarrollando diversas pruebas de concepto que hagan uso
+    de estas tecnologías.
+    \item Comparar la efectividad a la hora de identificar vulnerabilidades mediante fuzzing de los distintos enfoques que serán objeto de estudio. 
+    Se tendrán en cuenta parámetros como diferencias de tiempo hasta alcanzar una misma vulnerabilidad, número de ejecuciones por segundo o estabilidad.
+    \item Proporcionar un entorno de trabajo a modo de contenedor Docker que contenga todas las herramientas necesarias para llevar a cabo tareas de 
+    fuzzing y emulación de dispositivos IoT (fuzzing de arquitectura cruzada). Esto no solo facilitará la reproducibilidad de las pruebas de 
+    concepto desarrolladas sino que también puede ser de utilidad para todo aquel dispuesto a iniciarse en este campo. Además, se hará uso de 
+    integración continua para automatizar el compilado y publicación de la imagen en DockerHub.
+\end{itemize}
+
+Con la realización de este proyecto también se plantean una serie de objetivos más personales como son el 
+
+
 - Ampliar mis conocimientos para poder colaborar con la búsqueda de vulnerabilidades en estos dispositivos
 - Aportar a la comunidad de software libre
+- Colaborar con la investigación en ciberseguridad para ayudar a encontrar vulnerabilidades
+ 
 
 \section{Estructura}
