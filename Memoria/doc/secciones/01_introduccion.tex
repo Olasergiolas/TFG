@@ -28,16 +28,22 @@ seguridad, que explotadas por un atacante pueden tener consecuencias desastrosas
 Mirai\cite{mirai}, un malware que identificaba dispositivos IoT como routers o cámaras IP que usaran credenciales 
 por defecto conocidas para infectarlos y crear una botnet que permitiera realizar ataques DDoS a gran escala.\\
 
-Los motivos de esta pasividad por parte de un gran número de fabricantes de dispositivos IoT respecto a la 
-seguridad de sus productos son varios. En primer lugar, es necesario tener en cuenta que estamos ante una industria relativamente 
+Existen diversas causas que nos pueden ayudar a comprender el estado actual de la seguridad en el campo del IoT.
+En primer lugar, es necesario tener en cuenta que estamos ante una industria relativamente 
 joven, en claro auge y con un gran interés para todo tipo de compañías que quieren introducirse en ella diseñando 
-nuevos productos pero con la dificultad de carecer de experiencia previa en el sector. Esta falta de experiencia puede
-llevar a tomar decisiones como el realizar lanzamientos apresurados en los que la seguridad del producto no haya 
+nuevos productos pero muchas de ellas con la dificultad añadida de carecer de experiencia previa en el sector.
+Esta falta de experiencia puede llevar a tomar decisiones como el realizar lanzamientos apresurados en los que la seguridad del producto no haya 
 sido evaluada adecuadamente o el buscar reducir costes obviando aspectos de seguridad que puedan afectar a 
 la tríada CIA (Confidentiality, Integrity, Availability) en productos de gamas low-cost donde el margen de beneficio 
-es más estrecho. Por último, otro de los principales factores a tener en cuenta es lo sumamente limitado que 
-está en la mayoría de ocasiones el IoT respecto a factores como rendimiento, limitado por los bajos consumos 
-requeridos, memoria, limitada por costes/tamaño del dispositivo o tiempo, limitado en sistemas de tiempo real. 
+es más estrecho. Respecto a vulnerabilidades software, un factor clave a tener en cuenta es la dificultad en muchos de estos 
+dispositivos para que el usuario final actualice su firmware. Los altos niveles de complejidad y el gran número de dependencias del software
+que es desarrollado hoy en día convierte la pregunta de \textit{¿Es este producto software vulnerable?} en algo más parecido a 
+\textit{¿Cuánto tiempo tardará su seguridad en verse comprometida?} Esta realidad ejemplifica la necesidad de los fabricantes de 
+proporcionar actualizaciones de firmware con parches de seguridad y de incentivar su instalación de cara al usuario, pero por 
+desgracia, un gran número de sistemas empotrados o carece de actualizaciones ''Over The Air'' (OTA) o presenta una alta complejidad para 
+llevar a cabo su proceso de actualización, llevando así a una baja adopción por parte de los usuarios.
+Por último, cabe destacar también lo sumamente limitado que está en la mayoría de ocasiones el IoT respecto a factores como 
+rendimiento, limitado por los bajos consumos requeridos, memoria, limitada por costes/tamaño del dispositivo o tiempo, limitado en sistemas de tiempo real. 
 Se ha demostrado cómo para un STM32, hacer uso de un algoritmo de cifrado para las comunicaciones puede suponer 
 penalizaciones de hasta 111ms\cite{performance} para cifrar y descifrar 1KB de información usando un algoritmo como AES\_CBC.\bigskip
 
@@ -63,7 +69,8 @@ dificultad de aplicar rehosting entre otros y serán discutidos a lo largo del d
 
 En resumen, el fuzzing es una técnica que ha demostrado excelentes resultados a la hora de identificar bugs 
 que hubieran sido difícilmente encontrados a través de otros medios y que, aún presentando retos difíciles de abordar, resulta de especial interés en
-el campo del IoT ya que facilitaría la mejora de los estándares de seguridad actuales de la industria. Durante este proyecto trataremos de investigar
+el campo del IoT ya que ayudaría a paliar el reto de las actualizaciones de firmware en sistemas empotrados previamente mencionado, reduciendo el número de bugs con el que 
+estos salen al mercado y facilitaría la mejora de los estándares de seguridad actuales de la industria. Durante este proyecto trataremos de investigar
 e implementar algunos de los distintos enfoques existentes en la actualidad del fuzzing IoT orientado a código y se intentará proponer 
 soluciones a los retos planteados anteriormente.
 
