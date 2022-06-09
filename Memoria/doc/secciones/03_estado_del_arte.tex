@@ -1,7 +1,31 @@
 \chapter{Estado del arte}
 \label{estado_del_arte}
-- Como se ha testeado el software tradicionalmente y cómo se ha hecho de siempre el buscar vulnerabilidades.
-- Formas de hacerlo actualmente
-- Innovaciones
-- Comentar un montón de proyectos
+
+- Formas de hacerlo actualmente e Innovaciones
+- Comentar varios proyectos
 - Puntos positivos y negativos de todo
+
+Desde el origen del fuzzing este ha sufrido avances.... tradicionalmente dumb fuzzing, luego 
+paso a fuzzing que obtiene feedback de una manera u otra
+
+Tradicionalmente, en el fuzzing orientado a dispositivos IoT no se han aplicando técnicas
+específicas para este tipo de dispositivos, es decir, se asemejaba bastante al fuzzing de caja negra que 
+comúnmente encontrado en aplicaciones como fuzzing de servicios web mediante la mutación de peticiones.
+Este tipo de fuzzers caracterizados por no tener en cuenta el feedback del objetivo para la mutación de
+inputs son conocidos como "dumb fuzzers" y presentan un flujo de ejecución simple el cual comienza 
+con la mutación de un input válido,
+a partir de ahí este input mutado es utilizado como parámetro del objetivo a fuzzear, si el 
+objetivo (web, binario, etc.) produce un timeout o crashea el fuzzer registra el input que 
+ha provocado este comportamiento y si el funcionamiento del objetivo es correcto, se ignora 
+la información proporcionada por este y se vuelve a empezar. Dentro del dumb fuzzing hay también
+distintos niveles de complejidad, algunos autores proponen fuzzers extremadamente básicos que 
+llevan a cabo sus mutaciones de forma completamente aleatoria [TBD herramienta ejemplo] mientras 
+que otros proponen utilidades como Radamsa [TBD insertar cita] que aún aplicando un enfoque de caja negra,
+es capaz de inferir información del input original y utilizar heurísticas y patrones que son
+modificables en tiempo de ejecución para conseguir una mayor tasa de éxito. [TBD ventajas y 
+desventajas del dumb fuzzing, enganchas con las ventajas que supone el poder obtener feedback 
+y comenta que esto es especialmente difícil en el fuzzing IoT]
+
+
+[TBD Cuando se habla de fuzzing orientado a dispositivos IoT todas las técnicas y métodos para llevarlo 
+a cabo suelen enfoque emulación, en hardware o híbrido]
