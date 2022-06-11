@@ -50,8 +50,8 @@ penalizaciones de hasta 111ms\cite{performance} para cifrar y descifrar 1KB de i
 Aplicar técnicas que pudieran ayudar a mejorar la seguridad ''automatizando'' la búsqueda de vulnerabilidades presentes en los componentes software 
 de estos dispositivos sería de gran ayuda para facilitar y agilizar el proceso de identificación, análisis y corrección 
 de bugs y fallos de seguridad. El fuzzing es una técnica utilizada para encontrar bugs en software mediante la ejecución de 
-programas de forma repetida, haciendo uso de datos de entrada generados artificialmente a través de mutaciones aplicadas a otros
-inputs. Estos inputs generados suelen distar considerablemente de los inputs para los que el software fue diseñado 
+programas de forma repetida, haciendo uso de datos de entrada generados artificialmente a través de mutaciones aplicadas a un
+corpus de inputs válidos. Estos inputs generados suelen distar considerablemente de los inputs para los que el software fue diseñado 
 originalmente, por lo que se busca forzar a este a entrar en estados indefinidos potencialmente problemáticos. Aplicar
 fuzzing a dispositivos IoT se vuelve especialmente interesante debido a que estos trabajan con grandes cantidades de inputs,
 sea información en formato JSON, XML, un mensaje MQTT, se trata de inputs que provienen del exterior a través de la red y que en teoría deberían de ser validados 
