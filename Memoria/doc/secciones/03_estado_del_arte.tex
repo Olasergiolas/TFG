@@ -3,19 +3,19 @@
 Tradicionalmente, en el fuzzing orientado a dispositivos IoT no se han aplicando técnicas
 específicas para este tipo de dispositivos, es decir, se asemejaba bastante al fuzzing de caja negra 
 comúnmente encontrado a la hora de fuzzear servicios web mediante la mutación de peticiones.
-Este tipo de fuzzers caracterizados por no tener en cuenta el feedback del objetivo para la mutación de
-inputs son conocidos como ''dumb fuzzers'' y presentan un flujo de ejecución simple el cual comienza 
-con la mutación de un input válido.
+Este tipo de fuzzers conocidos como ''dumb fuzzers'' tratan al software como si de una caja negra se tratase, 
+algo que recibe un input y genera un output. El código que se haya alcanzado para procesar el input internamente no es tenido en
+cuenta a la hora de modificar los inputs. El fuzzing de caja negra sigue un flujo de ejecución simple el 
+cual comienza con la mutación de un input válido.
 A partir de ahí este input mutado es utilizado como parámetro del objetivo a fuzzear, si el 
-objetivo (web, binario, etc.) produce un timeout o crashea el fuzzer registra el input que 
-ha provocado este comportamiento y si el funcionamiento del objetivo es correcto, se ignora 
-la información proporcionada por este y se vuelve a empezar. Dentro del dumb fuzzing hay también
+objetivo (web, binario, etc.) produce un timeout o crashea, el fuzzer registra el input que 
+ha provocado este comportamiento y si el funcionamiento del objetivo es correcto se vuelve a empezar. Dentro del ''dumb fuzzing'' hay también
 distintos niveles de complejidad, algunos autores proponen ''random fuzzers'' extremadamente básicos que 
-llevan a cabo sus modificaciones al input de forma completamente aleatoria. Este enfoque, utilizado por 
-herramientas como\cite{zzuf} sigue la filosofía que dió lugar originalmente al fuzzing en 
+llevan a cabo sus modificaciones al input de forma completamente aleatoria. Este enfoque utilizado por 
+herramientas como\cite{zzuf}, sigue la filosofía que dió lugar originalmente al fuzzing en 
 los años 80 de la mano de Barton Miller\cite{Miller1990}. Modificar inputs de forma completamente aleatoria
 ejemplifica el principal problema del ''dumb fuzzing'', la baja cobertura de código. Para conseguir encontrar 
-el mayor número de fallos en el código, es necesario intentar ejecutar la mayor parte de este posible. Cuando 
+el mayor número de fallos en el código, es necesario intentar ejecutar el mayor porcentaje de este posible. Cuando 
 un input está siendo generado de manera completamente aleatoria, es bastante probable que este no cumpla con
 ciertas comprobaciones que el software realice sobre el formato del input. Esto provoca que el input sea descartado 
 de manera prematura en la ejecución del software y no se lleguen a alcanzar secciones críticas de código.
@@ -35,26 +35,61 @@ Boofuzz\cite{boofuzz} es un fuzzer que implementa esta idea permitiendo al usuar
 se defina un formato a seguir para el input y los campos de información que pueden ser fuzzeados sin dar lugar a inputs 
 inválidos. Usando esta herramienta, el equipo de ''Security for Everyone'' descubrió un 0-day (CVE-2020-29596)\cite{securityforeveryone}
 en MiniWeb HTTP server, un servidor HTTP básico orientado a dispositivos empotrados por su bajo uso de recursos.
-Xiaotao et al.\cite{snipuzz} proponen una técnica [TBD completar]
+Xiaotao et al.\cite{snipuzz} proponen ''Snipuzz'', una técnica de fuzzing de caja negra orientada a IoT en la que el fuzzer es capaz de obtener feedback 
+de las respuestas que devuelve el dispositivo. La idea principal es poder deducir qué código ha sido ejecutado internamente en base a 
+la respuesta obtenida al realizar una petición, aunque esto suponga depender de que el fabricante utilice mensajes de respuesta descriptivos.
+Gracias a esta información adicional, ''Snipuzz'' es capaz de identificar qué rol cumple cada 
+byte de un input y cómo afecta su modificación a la respuesta del dispositivo. Otros autores hacen frente al reto de conseguir generar inputs 
+válidos a través de la invocación de métodos internos de las propias aplicaciones móviles de los fabricantes de dispositivos IoT para generar los 
+inputs que enviar al dispositivo.
+Basados en este planteamiento surgen ''IoTFuzzer''\cite{Chen2018} y ''DIANE''\cite{Redini2021}, dos fuzzers IoT que delegan la creación de mensajes 
+a las aplicaciones para smartphone de fabricantes como TP-Link o Belkin diseñadas para gestionar remotamente los dispositivos IoT. 
+Se trata de un enfoque interesante a tener en cuenta ya que estas aplicaciones siempre van a generar mensajes que respeten el formato esperado
+por el dispositivo receptor. Partiendo de dicho concepto, estos fuzzers analizan automáticamente el código de las apps móviles en busca de secuencias de 
+métodos que envíen mensajes al dispositivo y mediante instrumentación dinámica, ejecutan estos métodos cambiando el valor de sus parámetros. La principal diferencia 
+entre ambos reside en el componente de la app móvil que toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz gráfica de la app
+para introducir la información mutada de forma similar a como lo haría un usuario real. Dicho planteamiento presenta el inconveniente de que este tipo 
+de apps suelen sanitizar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la app móvil.
+''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados depués de la sanitización de los inputs pero antes de
+que se realice el envío del mensaje al dispositivo IoT. Por desgracia, las técnicas de fuzzing de caja negra que trabajan sobre el dispositivo IoT
+directamente, ya sea haciéndole peticiones o ejecutando código en el hardware, suponen un gran sacrificio respecto a rendimiento ya que un hardware 
+tan limitado como el encontrado en dispositivos empotrados nunca será capaz de aportar una alta tasa de ejecuciones/respuestas por segundo, siendo esto un 
+factor clave a la hora de reducir el tiempo puede tardar un fuzzer en detectar una vulnerabilidad.
 
-En la búsqueda por conseguir una mayor cobertura de código, se pasa de un enfoque de caja negra a enfoques de caja blanca y caja gris.
-El primero gira entorno a la idea de generar binarios instrumentados a partir del código fuente original. De esta forma, un compilador 
-especial inserta código adicional encargado de reportar al fuzzer qué secciones de código exactamente han sido ejecutada para qué inputs.
-Aunque esta es la forma más popular de realizar fuzzing de binarios en la actualidad junto a herramientas como AFL++ o Honggfuzz, su
-aplicación orientada al internet de las cosas no es viable en la mayoría de casos ya que como se comentó en ''\nameref{introduccion}''
-los componentes software utilizados en firmware IoT no suelen ser de código abierto.\bigskip
+En la búsqueda por solucionar algunos de los problemas del fuzzing de caja negra como su baja eficiencia o su limitada cobertura de código, se 
+adoptan enfoques de caja blanca y caja gris. El primero gira entorno a la idea de generar binarios instrumentados a partir del código fuente original. De esta forma, un compilador 
+especial inserta código adicional encargado de reportar al fuzzer qué secciones de código exactamente han sido ejecutadas para qué inputs.
+Aunque esta es la metodología más popular para realizar fuzzing de binarios en la actualidad utilizando herramientas como AFL++\cite{afl++} o 
+Honggfuzz\cite{honggfuzz}, su aplicación orientada al internet de las cosas no es viable en la mayoría de casos ya que como se comentó en 
+''\nameref{introduccion}'' los componentes software utilizados en firmware IoT no suelen ser de código abierto, por lo que no pueden ser recompilados 
+usando compiladores que instrumenten el código.\bigskip
 
-Es por ello que un enfoque como el fuzzing de caja gris resulta mucho más atractivo cuando se busca fuzzear binarios de los cuales no se 
-posee el código fuente y se quiere hacerlo de manera más sofisticada que en el ''dumb fuzzing'', utilizando feedback para mejorar la mutación
-de inputs. En este caso, los fuzzers obtienen dicho feedback sin necesidad de instrumentar el código fuente original.
-Es decir, observan distintos parámetros de la ejecución del software a fuzzear para obtener información a modo de feedback que pueda ayudarles 
-a conseguir una mayor cobertura de código. El principal reto de los fuzzers de caja gris supone el determinar cómo obtener feedback que pueda 
-ser indicativo del estado interno de la ejecución del software objetivo. 
+Es por ello que un enfoque como el fuzzing de caja gris resulta mucho más atractivo cuando se busca conseguir una mayor cobertura de código
+al fuzzear binarios de los cuales no se posee el código fuente. En este caso, los fuzzers obtienen feedback sobre el estado interno de la ejecución
+del software sin necesidad de instrumentar el código fuente original.
+Es decir, observan distintos parámetros de la ejecución del software para obtener información a modo de feedback que pueda ayudarles 
+a conseguir una mayor cobertura de código. Conseguir información que pueda ser indicativa del estado interno de la ejecución de un software es
+el principal reto de los fuzzers de caja gris. [TBD introducir concepto rehosting] La mayoría opta por aplicar emulación con soluciones basadas en QEMU\cite{qemu}, un emulador de código abierto con 
+soporte para arquitecturas comúnmente utilizadas en IoT como ARM o MIPS, además de compatibilidad con distitos sistemas operativos como GNU-Linux y 
+software bare-metal (diseñado para ser ejecutado directamente sobre el hardware, sin la capa de abstracción que supone un SO). Optar por técnicas 
+basadas en emulación [TBD completar]
+
+Como podemos apreciar, además de la clasificación en fuzzing de caja blanca, gris y negra que hemos aplicado para describir las distintas técnicas 
+que han sido comentadas, es posible clasificarlas según el medio en el que el código fuzzeado esté siendo ejecutado. Se presentan así tres categorías 
+principales de fuzzing IoT:
+\begin{itemize}
+    \item \textbf{Fuzzing on-device}: El código que se desea fuzzear es ejecutado íntegramente en el dispositivo.
+    \item \textbf{Fuzzing mediante emulación}: Se recurre a software de emulación para ejecutar instrucciones máquina de otras arquitecturas además de 
+    emular hardware que pueda ser necesario para el correcto funcionamiento del código fuzzeado.
+    \item \textbf{Fuzzing híbrido}: Utilizan tanto emulación como el hardware real del dispositivo para la ejecución de código. Ciertas operaciones que 
+    tengan una fuerte dependencia en el hardware original pueden ser redirigidas a este manteniendo las ventajas del fuzzing mediante emulación.
+\end{itemize}
+
+[TBD además se mejora el rendimiento, instrumentación dinámica, feedback para memorar mutaciones, ]
+[Dificultades para extraer firmware, emular ciertos dispositivos, comportamiento no es el mismo...]
 
 [TBD Necesidad de mejorar resultados -> Grey-box fuzzing -> obtener info -> instrumentar estáticamente difícil -> soluciones como 
 reinstrumentación de binarios, fuzzing híbrido, emulación (y sanitizers), fuzzing en el dispositivo con JTAG,..]
-
-[TBD incluir algunas vulnerabilidades que han sacado los fuzzers citados]
 
 [TBD ventajas y 
 desventajas del dumb fuzzing, enganchas con las ventajas que supone el poder obtener feedback 
@@ -62,3 +97,5 @@ y comenta que esto es especialmente difícil en el fuzzing IoT]
 
 [TBD Cuando se habla de fuzzing orientado a dispositivos IoT todas las técnicas y métodos para llevarlo 
 a cabo suelen enfoque emulación, en hardware o híbrido]
+
+[TBD añadir tablas y diagramas]
