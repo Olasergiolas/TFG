@@ -12,7 +12,7 @@ objetivo (web, binario, etc.) produce un timeout o crashea, el fuzzer registra e
 ha provocado este comportamiento y si el funcionamiento del objetivo es correcto se vuelve a empezar. Dentro del ''dumb fuzzing'' hay también
 distintos niveles de complejidad, algunos autores proponen ''random fuzzers'' extremadamente básicos que 
 llevan a cabo sus modificaciones al input de forma completamente aleatoria. Este enfoque utilizado por 
-herramientas como\cite{zzuf}, sigue la filosofía que dió lugar originalmente al fuzzing en 
+herramientas como\cite{zzuf}, sigue la filosofía que dio lugar originalmente al fuzzing en 
 los años 80 de la mano de Barton Miller\cite{Miller1990}. Modificar inputs de forma completamente aleatoria
 ejemplifica el principal problema del ''dumb fuzzing'', la baja cobertura de código. Para conseguir encontrar 
 el mayor número de fallos en el código, es necesario intentar ejecutar el mayor porcentaje de este posible. Cuando 
@@ -50,7 +50,7 @@ métodos que envíen mensajes al dispositivo y mediante instrumentación dinámi
 entre ambos reside en el componente de la app móvil que toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz gráfica de la app
 para introducir la información mutada de forma similar a como lo haría un usuario real. Dicho planteamiento presenta el inconveniente de que este tipo 
 de apps suelen sanitizar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la app móvil.
-''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados depués de la sanitización de los inputs pero antes de
+''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados después de la sanitización de los inputs pero antes de
 que se realice el envío del mensaje al dispositivo IoT. Por desgracia, las técnicas de fuzzing de caja negra que trabajan sobre el dispositivo IoT
 directamente, ya sea haciéndole peticiones o ejecutando código en el hardware, suponen un gran sacrificio respecto a rendimiento ya que un hardware 
 tan limitado como el encontrado en dispositivos empotrados nunca será capaz de aportar una alta tasa de ejecuciones/respuestas por segundo, siendo esto un 
@@ -69,14 +69,40 @@ al fuzzear binarios de los cuales no se posee el código fuente. En este caso, l
 del software sin necesidad de instrumentar el código fuente original.
 Es decir, observan distintos parámetros de la ejecución del software para obtener información a modo de feedback que pueda ayudarles 
 a conseguir una mayor cobertura de código. Conseguir información que pueda ser indicativa del estado interno de la ejecución de un software es
-el principal reto de los fuzzers de caja gris. [TBD introducir concepto rehosting] La mayoría opta por aplicar emulación con soluciones basadas en QEMU\cite{qemu}, un emulador de código abierto con 
-soporte para arquitecturas comúnmente utilizadas en IoT como ARM o MIPS, además de compatibilidad con distitos sistemas operativos como GNU-Linux y 
-software bare-metal (diseñado para ser ejecutado directamente sobre el hardware, sin la capa de abstracción que supone un SO). Optar por técnicas 
-basadas en emulación [TBD completar]
+el principal reto de los fuzzers de caja gris. Llevar a cabo este análisis dinámico de software en arquitecturas más comúnmente orientadas a 
+propósito general como es x86-64 no es tarea difícil, pero hacerlo sobre plataformas altamente limitadas tanto en recursos como en funcionalidad
+puede suponer un reto. De esta forma surge la idea de añadir una capa de abstracción a través de emulación con soluciones basadas en QEMU\cite{qemu}
+que permitan realizar instrumentación dinámica de binarios. QEMU es un eficiente emulador de código abierto capaz de correr sistemas operativos y binarios
+diseñados para arquitecturas como ARM en otras completamente distintas como x86-64. Aunque en muchas ocasiones el concepto de emular software se asocia a
+una gran reducción de rendimiento, es necesario tener en cuenta que un ordenador de propósito general moderno como un portátil o un sobremesa es 
+considerablemente más potente que la mayoría de sistemas empotrados, por lo que aún habiendo un mayor overhead en la ejecución el impacto de este es mitigado.
+Los resultados de las investigaciones llevadas a cabo por Muench et al.\cite{Muench2018} muestran cómo emulando un sistema empotrado en su totalidad 
+se consigue una mejora de rendimiento sobre el hardware original.
+Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplicar la siguiente clasificación:
+\begin{enumerate}[I]
+    \item \textbf{User-mode emulation}: Se emula exclusivamente la ejecución del binario que resulte de interés. QEMU evita tener que emular el sistema 
+    operativo al completo traduciendo las llamadas al sistema de la aplicación emulada en llamadas al sistema del host. Es por ello que usar este modo 
+    solo es factible si tanto el host como el huésped comparten sistema operativo. Herramientas como Qemuafl\cite{qemuafl} consiguen un mayor número de 
+    ejecuciones por segundo en comparación con (II), pero por desgracia la ausencia de emulación de ciertos dispositivos hardware puede hacer imposible 
+    el correcto funcionamiento del binario que está siendo emulado. Zheng et al.\cite{Zheng2019} destacan que durante sus intentos de emular distintos 
+    servidores HTTP, DNS y SSH utilizados en routers comerciales, este modo de QEMU fue incapaz de emular correctamente ninguno de los binarios analizados.
+    \item \textbf{System-mode o Full system emulation}: Se trata de una técnica implementada por QEMU en la cual se crea una máquina virtual que emula un 
+    sistema al completo, esto incluye CPU, sistema operativo, periféricos hardware, etc. Gracias a esta técnica es posible emular software que puede resultar 
+    problemático aplicando (I) debido a posibles dependencias duras sobre otros dispositivos. Un gran número de fuzzers propuestos por diversos autores 
+    basan su funcionamiento en este principio debido a que permite alcanzar un balance entre rendimiento y estabilidad. Algunos ejemplos son [TBD ejemplos]
+    \item \textbf{Rehosting}: El rehosting\cite{Fasano2021} es un concepto muy similar a (II) pero con la principal diferencia de que no se busca emular el 
+    sistema al completo sino solo el mínimo número de componentes necesarios para hacer funcionar un firmware.
+    \item \textbf{Unicorn Engine}: Unicorn [TBD añadir referencia] es un framework basado en QEMU que propone un enfoque de emulación ultraligero en el que el elemento único a 
+    emular es la CPU. Se diferencia de (I) en que Unicorn no realiza traducción de llamadas al sistema ni gestión de señales POSIX, solo traduce instrucciones 
+    máquina de la arquitectura del huésped a instrucciones comprensibles por la CPU del host. Además, proporciona una API intuitiva que facilita 
+    considerablemente operaciones necesarias para la instrumentación dinámica de binarios como lecturas/escrituras de memoria y registros, mapeos de memoria o 
+    la posibilidad de definir hooks que serán ejecutados al alcanzarse ciertas direcciones de memoria. [TBD Qiling]
+    \item \textbf{Augmented process emulation}:
+\end{enumerate} 
 
-Como podemos apreciar, además de la clasificación en fuzzing de caja blanca, gris y negra que hemos aplicado para describir las distintas técnicas 
-que han sido comentadas, es posible clasificarlas según el medio en el que el código fuzzeado esté siendo ejecutado. Se presentan así tres categorías 
-principales de fuzzing IoT:
+Como podemos apreciar, además de la clasificación general de técnicas de fuzzing en fuzzing de caja blanca, gris y negra que hemos aplicado para clasificar las 
+distintas técnicas que han sido comentadas, es posible clasificarlas también según el medio en el que el código fuzzeado esté siendo ejecutado. Se presentan así 
+tres categorías principales de fuzzing IoT:
 \begin{itemize}
     \item \textbf{Fuzzing on-device}: El código que se desea fuzzear es ejecutado íntegramente en el dispositivo.
     \item \textbf{Fuzzing mediante emulación}: Se recurre a software de emulación para ejecutar instrucciones máquina de otras arquitecturas además de 
@@ -85,17 +111,9 @@ principales de fuzzing IoT:
     tengan una fuerte dependencia en el hardware original pueden ser redirigidas a este manteniendo las ventajas del fuzzing mediante emulación.
 \end{itemize}
 
-[TBD además se mejora el rendimiento, instrumentación dinámica, feedback para memorar mutaciones, ]
 [Dificultades para extraer firmware, emular ciertos dispositivos, comportamiento no es el mismo...]
 
 [TBD Necesidad de mejorar resultados -> Grey-box fuzzing -> obtener info -> instrumentar estáticamente difícil -> soluciones como 
 reinstrumentación de binarios, fuzzing híbrido, emulación (y sanitizers), fuzzing en el dispositivo con JTAG,..]
-
-[TBD ventajas y 
-desventajas del dumb fuzzing, enganchas con las ventajas que supone el poder obtener feedback 
-y comenta que esto es especialmente difícil en el fuzzing IoT]
-
-[TBD Cuando se habla de fuzzing orientado a dispositivos IoT todas las técnicas y métodos para llevarlo 
-a cabo suelen enfoque emulación, en hardware o híbrido]
 
 [TBD añadir tablas y diagramas]
