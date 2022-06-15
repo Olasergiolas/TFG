@@ -55,7 +55,7 @@ factor clave a la hora de reducir el tiempo puede tardar un fuzzer en detectar u
 
 En la búsqueda por solucionar algunos de los problemas del fuzzing de caja negra como su baja eficiencia o su limitada cobertura de código, se 
 adoptan enfoques de caja blanca y caja gris. El primero gira entorno a la idea de generar binarios instrumentados a partir del código fuente original. De esta forma, un compilador 
-especial inserta código adicional encargado de reportar al fuzzer qué secciones de código exactamente han sido ejecutadas para qué inputs.
+especial inserta código adicional encargado de reportar al fuzzer qué bloques básicos de código han sido ejecutados exactamente para qué inputs.
 Aunque esta es la metodología más popular para realizar fuzzing de binarios en la actualidad utilizando herramientas como AFL++\cite{afl++} o 
 Honggfuzz\cite{honggfuzz}, su aplicación orientada al internet de las cosas no es viable en la mayoría de casos ya que como se comentó en 
 ''\nameref{introduccion}'' los componentes software utilizados en firmware IoT no suelen ser de código abierto, por lo que no pueden ser recompilados 
@@ -119,30 +119,41 @@ Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplic
     original mientras que la mayoría de instrucciones máquina se ejecutan en la CPU de otro sistema. Aplicar un enfoque hardware in-the-loop aporta a costa 
     de reducir escalabilidad las ventajas de usar emulación manteniendo a su vez la alta estabilidad que proporciona usar el hardware original.
     AVATAR\cite{Zaddach2014} aplica esta técnica delegando las operaciones de I/O al hardware original mientras que el resto de la ejecución se lleva a 
-    cabo mediante emulación. uAFL\cite{uAFL} basa su funcionamiento en el hardware de debugging ''ARM ETM'' incluido en ciertos procesadores ARM. Dado que 
+    cabo mediante emulación. uAFL\cite{uAFL} lleva a cabo la ejecución del software en el hardware original y extrae del dispositivo a través de JTAG
+    información de cobertura de código gracias al hardware de debugging llamado ''ARM ETM'' incluido en ciertos procesadores ARM. Dado que 
     esta información necesita de una gran cantidad de recursos para ser procesada, se extrae del dispositivo para su procesamiento y se utiliza el resultado
     para guiar el proceso de fuzzing.
-\end{enumerate} 
+\end{enumerate}
 
-Como podemos apreciar, además de la clasificación general de técnicas de fuzzing en fuzzing de caja blanca, gris y negra que hemos aplicado para clasificar las 
-distintas técnicas que han sido comentadas, es posible clasificarlas también según el medio en el que el código fuzzeado esté siendo ejecutado. Se presentan así 
-tres categorías principales de fuzzing IoT:
-\begin{itemize}
-    \item \textbf{Fuzzing on-device}: El código que se desea fuzzear es ejecutado íntegramente en el hardware original. Este es el caso principalmente cuando
-    se aplica fuzzing a servicios expuestos al exterior corriendo en el dispositivo IoT. [TBD uAFL]
-    \item \textbf{Fuzzing mediante emulación}: Se recurre a software de emulación para ejecutar instrucciones máquina de otras arquitecturas además de 
-    emular hardware que pueda ser necesario para el correcto funcionamiento del código fuzzeado.
-    \item \textbf{Fuzzing híbrido}: Se aplica emulación de tipo hardware in-the-loop.
-\end{itemize}
+[TBD si hay tiempo: dificultad de que puede que algo que crashee en el hardware original no lo haga al emular...]
 
-Dejando atrás la emulación como parte del fuzzing IoT pasamos a tratar los ''Sanitizers'', otra tecnología comúnmente aplicada en conjunción con el 
-fuzzing que facilitan la detección de errores en operaciones de memoria.
+Más allá de la emulación, también existen otras tecnologías comúnmente utilizadas en conjunción con el fuzzing IoT como son los ''Sanitizers'' y los
+''Rewriters''. En primer lugar, los sanitizers como ASAN\cite{Serebryany2012} o MSAN\cite{Stepanov2015} son herramientas que buscan ayudar con la detección de errores de memoria mediante la instrumentación 
+de código. Al instrumentar el código de una aplicación, son capaces de añadir mecanismos de protección al stack y al heap además de reemplazar funciones
+de acceso a memoria como \textit{malloc} o \textit{free} con versiones propias capaces de reportar información detallada sobre la operación que está siendo 
+realizada. El objetivo principal de todo esto es poder monitorizar operaciones ilegales de memoria como buffer overflows,
+use-after-free, leaks de memoria, etc. introduciendo el mínimo overhead posible, además de poder hacer que el binario crashee en cuanto se detecte una de estas
+operaciones ilegales, incluso si durante un uso normal del software esto no hubiera sido suficiente como para afectar de forma visible su funcionamiento. 
+Como es lógico, facilitar a los fuzzers la detección de errores de memoria resulta toda una ventaja pero debido a que la mayoría de sanitizers basan su
+funcionamiento en la instrumentación de código fuente, su aplicación no resulta viable para el tipo de fuzzing que nos atañe. Con el objetivo de poder 
+llevar esta tecnología a binarios de código cerrado surge QASAN\cite{Fioraldi2020}, un sanitizer que consigue imitar la funcionalidad de ASAN\cite{Serebryany2012} 
+mediante las capacidades de instrumentación dinámica que proporciona QEMU. Como podremos observar en \nameref{implementacion}, aplicar esta herramienta 
+junto a un fuzzer puede revelar bugs de memoria que no hubieran sido descubiertos aplicando fuzzing clásico. \bigskip
 
-[Dificultades para extraer firmware, emular ciertos dispositivos, comportamiento no es el mismo...]
+Respecto a los rewriters, se tratan de herramientas que buscan instrumentar estáticamente binarios, inyectando código de instrumentación directamente en 
+el binario. Aunque existen multitud de rewriters siendo desarrollados actualmente como Retrowrite\cite{Dinesh2020}, e9Patch\cite{Duck2020} o 
+ZAFL\cite{Nagy2021}, es necesario tener en cuenta que se tratan de herramientas muy recientes que en muchos casos pueden introducir fallos en los binarios
+instrumentados además de carecer en ocasiones de funcionalidades básicas como soporte para binarios de diferentes arquitecturas más allá de x86-64. 
+Dichos problemas hacen que la tecnología no esté todavía preparada para su uso a gran escala y menos aún en el contexto de los sistemas empotrados y el 
+internet de las cosas.
+\bigskip
 
-[TBD Necesidad de mejorar resultados -> Grey-box fuzzing -> obtener info -> instrumentar estáticamente difícil -> soluciones como 
-reinstrumentación de binarios, fuzzing híbrido, emulación (y sanitizers), fuzzing en el dispositivo con JTAG,..]
+Una vez ya tratados los distintos enfoques, técnicas y herramientas presentes en el panorama actual del fuzzing IoT se nos abre un gran abanico de 
+posibilidades a la hora de poner en práctica y combinar el uso de algunas de estas técnicas y herramientas para intentar conseguir detectar el mayor 
+número de vulnerabilidades en software orientado a sistemas empotrados e IoT. Esto será llevado a más adelante en el proyecto, donde pondremos a prueba 
+conceptos como el fuzzing de caja negra, emulación system-mode y user-mode, instrumentación dinámica o los sanitizers. Por último, antes de finalizar con
+esta sección cabe destacar que, aunque el fuzzing de protocolos como Zigbee o MQTT es también una rama de investigación de gran interés en el campo del
+fuzzing IoT, su discusión queda fuera del alcance de este proyecto.
 
+\bigskip
 [TBD añadir tablas y diagramas]
-
-[TBD fuzzing de protocolos fuera de scope de este proyecto]
