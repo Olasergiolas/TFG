@@ -4,14 +4,20 @@ Tradicionalmente, en el fuzzing orientado a dispositivos IoT no se aplicaban té
 específicas para este tipo de dispositivos, es decir, el principal foco de atención era el fuzzing de sus portales web a través 
 de peticiones HTTP(s) con un enfoque de caja negra. Este tipo de fuzzers conocidos como ''dumb fuzzers'' tratan al software como si de una caja negra se tratase, 
 algo que recibe un input y genera un output. El código que se haya alcanzado para procesar el input internamente no es tenido en
-cuenta a la hora de modificar los inputs. El fuzzing de caja negra sigue un flujo de ejecución simple el cual comienza con la mutación de un input válido.
+cuenta a la hora de modificar los inputs.
+
+\section{Fuzzing de caja negra}
+El fuzzing de caja negra sigue un flujo de ejecución simple el cual comienza con la mutación de un input válido.
 A partir de ahí este input mutado es utilizado como parámetro del objetivo a fuzzear, si el 
 objetivo (web, binario, etc.) produce un timeout o crashea, el fuzzer registra el input que 
 ha provocado este comportamiento y si el funcionamiento del objetivo es correcto se vuelve a empezar. Dentro del ''dumb fuzzing'' hay también
 distintos niveles de complejidad, algunos autores proponen ''random fuzzers'' extremadamente básicos que 
 llevan a cabo sus modificaciones al input de forma completamente aleatoria. Este enfoque utilizado por 
 herramientas como\cite{zzuf}, sigue la filosofía que dio lugar originalmente al fuzzing en 
-los años 80 de la mano de Barton Miller\cite{Miller1990}. Modificar inputs de forma completamente aleatoria
+los años 80 de la mano de Barton Miller\cite{Miller1990}.
+
+\subsection{Mutation-based fuzzing}
+Modificar inputs de forma completamente aleatoria
 ejemplifica el principal problema del ''dumb fuzzing'', la baja cobertura de código. Para conseguir encontrar 
 el mayor número de fallos en el código, es necesario intentar ejecutar el mayor porcentaje de este posible. Cuando 
 un input está siendo generado de manera completamente aleatoria, es bastante probable que este no cumpla con
@@ -25,6 +31,7 @@ para conseguir una mayor tasa de éxito de cara a encontrar vulnerabilidades. Es
 un buen fuzzer de caja negra es capaz de identificar de forma efectiva vulnerabilidades críticas en productos comerciales 
 ampliamente utilizados como Cisco AnyConnect, Mozilla Firefox o Google Chrome.
 
+\subsection{Generation-based fuzzing}
 Otros fuzzers de caja negra categorizados como ''Generation-based fuzzers''\cite{Felderer2016} van un paso más allá y utilizan diccionarios o modelos para solo 
 mutar determinados campos de forma que se maximice el número de inputs ''válidos'' generados para la aplicación a fuzzear. Esto es de 
 especial interés en aplicaciones que utilizan datos con una sintaxis especialmente compleja o verbose como HTML, SQL o XML.
@@ -36,7 +43,10 @@ Xiaotao et al.\cite{snipuzz} proponen ''Snipuzz'', una técnica de fuzzing de ca
 de las respuestas que devuelve el dispositivo. La idea principal es poder deducir qué código ha sido ejecutado internamente en base a 
 la respuesta obtenida al realizar una petición, aunque esto suponga depender de que el fabricante utilice mensajes de respuesta descriptivos.
 Gracias a esta información adicional, ''Snipuzz'' es capaz de identificar qué rol cumple cada 
-byte de un input y cómo afecta su modificación a la respuesta del dispositivo. Otros autores hacen frente al reto de conseguir generar inputs 
+byte de un input y cómo afecta su modificación a la respuesta del dispositivo.
+
+\subsection{App-based fuzzing}
+Otros autores hacen frente al reto de conseguir generar inputs 
 válidos a través de la invocación de métodos internos de las propias aplicaciones móviles de los fabricantes de dispositivos IoT para generar los 
 inputs que enviar al dispositivo.
 Basados en este planteamiento surgen ''IoTFuzzer''\cite{Chen2018} y ''DIANE''\cite{Redini2021}, dos fuzzers IoT que delegan la creación de mensajes 
@@ -53,6 +63,7 @@ directamente, ya sea haciéndole peticiones o ejecutando código en el hardware,
 tan limitado como el encontrado en dispositivos empotrados nunca será capaz de aportar una alta tasa de ejecuciones/respuestas por segundo, siendo esto un 
 factor clave a la hora de reducir el tiempo puede tardar un fuzzer en detectar una vulnerabilidad.
 
+\section{Fuzzing de caja blanca}
 En la búsqueda por solucionar algunos de los problemas del fuzzing de caja negra como su baja eficiencia o su limitada cobertura de código, se 
 adoptan enfoques de caja blanca y caja gris. El primero gira entorno a la idea de generar binarios instrumentados a partir del código fuente original. De esta forma, un compilador 
 especial inserta código adicional encargado de reportar al fuzzer qué bloques básicos de código han sido ejecutados exactamente para qué inputs.
@@ -60,8 +71,9 @@ Aunque esta es la metodología más popular para realizar fuzzing de binarios en
 Honggfuzz\cite{honggfuzz}, su aplicación orientada al internet de las cosas no es viable en la mayoría de casos ya que como se comentó en 
 ''\nameref{introduccion}'' los componentes software utilizados en firmware IoT no suelen ser de código abierto, por lo que no pueden ser recompilados 
 usando compiladores que instrumenten el código. Por suerte, AFL++ también implementa distintos modos de funcionamiento de caja gris
-(QEMU\cite{qemuafl}, FRIDA\cite{frida}, Unicorn\cite{unicorn}\dots) que serán tratados a continuación.\bigskip
+(QEMU\cite{qemuafl}, FRIDA\cite{frida}, Unicorn\cite{unicorn}\dots) que serán tratados a continuación.
 
+\section{Fuzzing de caja gris}
 Es la dificultad para conseguir acceso al código fuente original lo que hace que un enfoque como el fuzzing de caja gris resulte mucho más atractivo 
 cuando se busca conseguir una mayor cobertura de código al fuzzear binarios de los cuales no se posee el código fuente. En este caso, los fuzzers obtienen 
 feedback sobre el estado interno de la ejecución del software sin necesidad de instrumentar el código fuente original. Conseguir información que pueda ser
@@ -75,6 +87,8 @@ una gran reducción de rendimiento, es necesario tener en cuenta que un ordenado
 considerablemente más potente que la mayoría de sistemas empotrados actuales, por lo que aún habiendo un mayor overhead en la ejecución el impacto de este es mitigado.
 Los resultados de las investigaciones llevadas a cabo por Muench et al.\cite{Muench2018} muestran cómo emulando un sistema empotrado en su totalidad 
 se consigue una mejora de rendimiento sobre el hardware original.
+
+\subsection{Técnicas de emulación}
 Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplicar la siguiente clasificación:
 \begin{enumerate}[I]
     \item \textbf{User-mode emulation}: Se emula exclusivamente la ejecución del binario que resulte de interés. QEMU evita tener que emular el sistema 
@@ -104,7 +118,9 @@ Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplic
     máquina de la arquitectura del huésped a instrucciones comprensibles por la CPU del host. Además, proporciona una API intuitiva que facilita 
     considerablemente operaciones necesarias para la instrumentación dinámica de binarios como lecturas/escrituras de memoria y registros, mapeos de memoria o 
     la posibilidad de definir hooks que serán ejecutados al alcanzarse ciertas direcciones de memoria. Como ya se ha comentado, AFL++ dispone de integración 
-    con este framework el cual posibilita la aplicación de fuzzing sobre funcionalidades específicas de binarios complejos. Véase un binario que obtenga su 
+    con este framework el cual posibilita la aplicación de fuzzing sobre funcionalidades específicas de binarios complejos.\bigskip 
+    
+    Véase un binario que obtenga su 
     input directamente desde un dispositivo hardware como una antena de radio o un chip NFC, en lugar de fuzzear el binario al completo incluyendo todo el 
     proceso de tratamiento de señales se instrumenta dinámicamente el binario para definir un nuevo punto de entrada del código y ajustar los registros
     adecuadamente para poder así fuzzear únicamente la sección de código que nos interese. Qiling\cite{qiling} es otro framework de emulación basado en
@@ -125,8 +141,7 @@ Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplic
     para guiar el proceso de fuzzing.
 \end{enumerate}
 
-[TBD si hay tiempo: dificultad de que puede que algo que crashee en el hardware original no lo haga al emular...]
-
+\subsection{Sanitizers}
 Más allá de la emulación, también existen otras tecnologías comúnmente utilizadas en conjunción con el fuzzing IoT como son los ''Sanitizers'' y los
 ''Rewriters''. En primer lugar, los sanitizers como ASAN\cite{Serebryany2012} o MSAN\cite{Stepanov2015} son herramientas que buscan ayudar con la detección de errores de memoria mediante la instrumentación 
 de código. Al instrumentar el código de una aplicación, son capaces de añadir mecanismos de protección al stack y al heap además de reemplazar funciones
@@ -140,6 +155,7 @@ llevar esta tecnología a binarios de código cerrado surge QASAN\cite{Fioraldi2
 mediante las capacidades de instrumentación dinámica que proporciona QEMU. Como podremos observar en \nameref{implementacion}, aplicar esta herramienta 
 junto a un fuzzer puede revelar bugs de memoria que no hubieran sido descubiertos aplicando fuzzing clásico. \bigskip
 
+\subsection{Rewriters}
 Respecto a los rewriters, se tratan de herramientas que buscan instrumentar estáticamente binarios, inyectando código de instrumentación directamente en 
 el binario. Aunque existen multitud de rewriters siendo desarrollados actualmente como Retrowrite\cite{Dinesh2020}, e9Patch\cite{Duck2020} o 
 ZAFL\cite{Nagy2021}, es necesario tener en cuenta que se tratan de herramientas muy recientes que en muchos casos pueden introducir fallos en los binarios

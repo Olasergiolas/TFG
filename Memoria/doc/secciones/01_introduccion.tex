@@ -26,7 +26,7 @@ considerablemente desactualizado y vulnerable como pueden ser versiones del kern
 diez años y ya consideradas ''End Of Life''. Problemas como los mencionados dan lugar a grandes brechas de
 seguridad, que explotadas por un atacante pueden tener consecuencias desastrosas. Ejemplo de ello es 
 Mirai\cite{mirai}, un malware que identificaba dispositivos IoT como routers o cámaras IP que usaran credenciales 
-por defecto conocidas para infectarlos y crear una botnet que permitiera realizar ataques DDoS a gran escala.\\
+por defecto conocidas para infectarlos y crear una botnet que permitiera realizar ataques DDoS a gran escala.\bigskip
 
 Existen diversas causas que nos pueden ayudar a comprender el estado actual de la seguridad en el campo del IoT.
 En primer lugar, es necesario tener en cuenta que estamos ante una industria relativamente 
@@ -35,7 +35,9 @@ nuevos productos pero muchas de ellas con la dificultad añadida de carecer de e
 Esta falta de experiencia puede llevar a tomar decisiones como el realizar lanzamientos apresurados en los que la seguridad del producto no haya 
 sido evaluada adecuadamente o el buscar reducir costes obviando aspectos de seguridad que puedan afectar a 
 la tríada CIA (Confidentiality, Integrity, Availability) en productos de gamas low-cost donde el margen de beneficio 
-es más estrecho. Respecto a vulnerabilidades software, un factor clave a tener en cuenta es la dificultad en muchos de estos 
+es más estrecho.\bigskip
+
+Respecto a vulnerabilidades software, un factor clave a tener en cuenta es la dificultad en muchos de estos 
 dispositivos para que el usuario final actualice su firmware. Los altos niveles de complejidad y el gran número de dependencias del software
 que es desarrollado hoy en día convierte la pregunta de \textit{¿Es este producto software vulnerable?} en algo más parecido a 
 \textit{¿Cuánto tiempo tardará su seguridad en verse comprometida?} Esta realidad ejemplifica la necesidad de los fabricantes de 
@@ -61,7 +63,7 @@ se podría detectar si este presenta un comportamiento indeterminado en casos co
 podría dar lugar a vulnerabilidades potenciales como denegación de servicio, corrupción de memoria o filtración de información. Respecto a casos reales
 de vulnerabilidades críticas encontradas en dispositivos IoT a través de fuzzing podemos destacar entre otros los descubrimientos realizados por la firma 
 de ciberseguridad ''Comsecuris'', que gracias a aplicar fuzzing descubrieron una vulnerabilidad en el gestor de red usado en el 
-sistema operativo de los vehículos Tesla la cual permitía a un atacante realizar ejecución de código de forma remota y sin autenticar \cite{TeslaMCU}.
+sistema operativo de los vehículos Tesla la cual permitía a un atacante realizar ejecución de código de forma remota y sin autenticar \cite{TeslaMCU}.\bigskip
 
 Cabe mencionar que emplear fuzzing orientado a IoT también presenta sus propios retos y complicaciones no tan presentes en el fuzzing tradicional. 
 Ejemplos de estos retos son el disponer exclusivamente de binarios compilados para otras arquitecturas, la baja velocidad de ejecución al fuzzear o la 
@@ -81,8 +83,8 @@ Además, como objetivos complementarios a cumplir durante la realización de est
 \begin{itemize}
     \item Estudiar y poner en práctica los enfoques más punteros y 
     conceptos relacionados al respecto como el reversing de firmware, rehosting, emulación de sistema, binarios y de instrucciones máquina, 
-    sanitizadores de memoria, black-box y grey-box fuzzing. Esto se llevará a cabo desarrollando diversas pruebas de concepto que hagan uso
-    de estas tecnologías.
+    sanitizadores de memoria, black-box y grey-box fuzzing. Esto se llevará a cabo desarrollando diversas pruebas de concepto a modo de 
+    experimentos que hagan uso de estas tecnologías.
     \item Comparar la efectividad a la hora de identificar vulnerabilidades mediante fuzzing de los distintos enfoques que serán objeto de estudio. 
     Se tendrán en cuenta parámetros como diferencias de tiempo hasta alcanzar una misma vulnerabilidad, número de ejecuciones por segundo o estabilidad.
     \item Proporcionar un entorno de trabajo a modo de contenedor Docker que contenga todas las herramientas necesarias para llevar a cabo tareas de 
