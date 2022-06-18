@@ -152,7 +152,7 @@ operaciones ilegales, incluso si durante un uso normal del software esto no hubi
 Como es lógico, facilitar a los fuzzers la detección de errores de memoria resulta toda una ventaja pero debido a que la mayoría de sanitizers basan su
 funcionamiento en la instrumentación de código fuente, su aplicación no resulta viable para el tipo de fuzzing que nos atañe. Con el objetivo de poder 
 llevar esta tecnología a binarios de código cerrado surge QASAN\cite{Fioraldi2020}, un sanitizer que consigue imitar la funcionalidad de ASAN\cite{Serebryany2012} 
-mediante las capacidades de instrumentación dinámica que proporciona QEMU. Como podremos observar en \nameref{implementacion}, aplicar esta herramienta 
+mediante las capacidades de instrumentación dinámica que proporciona QEMU. Como podremos observar en \nameref{experimentos}, aplicar esta herramienta 
 junto a un fuzzer puede revelar bugs de memoria que no hubieran sido descubiertos aplicando fuzzing clásico. \bigskip
 
 \subsection{Rewriters}

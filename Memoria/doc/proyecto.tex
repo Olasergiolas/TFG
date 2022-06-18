@@ -28,7 +28,8 @@
 \hypersetup{
 	colorlinks=true,	% false: boxed links; true: colored links
 	linkcolor=black,	% color of internal links
-	urlcolor=cyan		% color of external links
+	urlcolor=cyan,		% color of external links
+	citecolor=blue
 }
 \renewcommand{\familydefault}{\sfdefault}
 \usepackage{fancyhdr} % Custom headers and footers
@@ -50,6 +51,7 @@
 \setcounter{secnumdepth}{4}
 \usepackage[Lenny]{fncychap}
 \graphicspath{{./pictures/}}
+\newcommand{\shellcmd}[1]{\\\indent\indent\texttt{\footnotesize\# #1}\\}
 
 \begin{document}
 
@@ -82,14 +84,14 @@
 	\input{secciones/03_planificacion.tex}
 
 	% Descripción del problema y hasta donde se llega
-	\input{secciones/04_descripcion}	
+	\input{secciones/04_experimentos.tex}	
 
 	% Análisis del problema
 	% 1. Análisis de requisitos
 	% 2. Análisis de las soluciones
 	% 3. Solucion propuesta
 	% 4. Análisis de seguridad
-	\input{secciones/05_analisis}
+	% \input{secciones/05_analisis}
 
 	% Desarrollo bajo sprints: 
 	% 	1. Permitir registros y login de usuarios
@@ -97,10 +99,10 @@
 	% 	3. Desarrollo del sistema de denuncias administrativas y accidentes
 	% 	4. Desarrollo del sistema de croquis
 	%   5. Instalación de la aplicación de manera automática
-	\input{secciones/06_implementacion}
+	% \input{secciones/06_implementacion}
 
 	% Conclusiones
-	\input{secciones/07_conclusiones}
+	\input{secciones/05_conclusiones}
 
 	% Trabajos futuros
 	
