@@ -104,6 +104,47 @@ experimentos'' y ''Documentación''. El siguiente listado de tareas queda reflej
     \end{itemize}
 \end{itemize}
 
+\section{Estimación de costes}
+Previamente a comenzar con el proyecto, estimaremos los costes de su realización en base a diferentes factores como el número de horas necesarias
+estimado, el sueldo medio de un ingeniero informático junior, los costes del hardware que necesitaremos para llevarlo a cabo o servicios necesarios
+que también necesitan ser sufragados como internet o la electricidad utilizada.\bigskip
+
+Respecto al coste de la mano de 
+obra, partimos de las 327 horas estimadas en el diagrama de Gantt (figura \ref{fig:gantt}) durante 3 meses, teniendo en cuenta también un 
+salario medio de ingeniero informático junior de 20.000 euros brutos al año. Para llevar a cabo el proyecto se planea dedicar una media de 
+4 horas diarias durante todos los días de la semana, lo cual supone un coste de $\sim13'7\euro$ la hora. Los costes de hardware se limitan al
+ordenador sobre el que se va a realizar el proyecto, ya que al basar este en técnicas de emulación, no va a ser requerido hardware adicional 
+como podrían ser dispositivos IoT de domótica. El fuzzing IoT no requiere de ningún hardware específico para el ordenador con el que se va a 
+realizar, aunque si ayuda considerablemente el tener suficiente RAM e hilos de CPU para poder aumentar el número de ejecuciones por segundo 
+poniendo en marcha varias instancias en paralelo del fuzzer. Un ordenador de sobremesa como el que va a ser utilizado con 16GB de RAM, un 
+Ryzen 5 3600 y una GPU cualquiera (exclusivamente utilizada como salida de vídeo, ya que el Ryzen 5 3600 carece de GPU integrada) puede ser
+conseguido por $\sim600\euro$.\bigskip
+
+Por último, el coste del servicio de internet en el lugar de trabajo actualmente es de $30\euro$ mensuales mientas 
+que el coste de la luz es difícil de estimar debido a las constantes fluctuaciones en el precio de la electricidad, aunque estimaremos que 
+para un un ordenador de dichas características que en el peor de los casos con la CPU trabajando al 100\% consume $\sim400W$ junto a sus 
+periféricos, se produce un gasto de 1'6 KWh para 4 horas diarias de trabajo. Esto se traduce a $\sim0'37\euro$ diarios ($10'36\euro$ mensuales)
+con un precio de $0'23\euro$ el KW/h. Generamos la siguiente tabla con el presupuesto estipulado:
+
+\begin{table}[H]
+    \begin{tabular}{llll}
+    \rowcolor[HTML]{C0C0C0} 
+    \textbf{Descripción}           & \textbf{Uds.} & \textbf{Precio/Unidad ($\euro$)} & \textbf{Total ($\euro$)} \\
+    Mano de obra                   & 327           & 13'7                   & 4.479'9                \\
+    Ordenador de sobremesa         & 1             & 600                    & 600                    \\
+    Servicio de internet (mensual) & 3             & 30                     & 90                     \\
+    Servicio de luz (mensual)      & 3             & 10'36                  & 31'08                  \\\hline
+                                   &               & \textbf{Total sumado:} & 5200'98$\euro$              
+    \end{tabular}
+    \caption{Presupuesto para la realización del proyecto.}
+    \label{table:presupuesto}
+\end{table}
+
+Como conclusión comentar que no se trata de un presupuesto competitivo para la labor de investigación que se desea realizar. Estas tareas suelen 
+ser llevadas a cabo por expertos de la materia a tratar mientras que este proyecto fue planteado para ser llevado a cabo sin experiencia previa al 
+respecto con el objetivo de aprender en el proceso. Es por ello que tareas que podrían ser realizadas en menor tiempo por un investigador ya formado al respecto previamente, se prolongan 
+en el tiempo con el consecuente incremento en costes.
+
 \section{Seguimiento del desarrollo}
 \label{seguimiento}
 Github ha sido la plataforma de control de cambios elegida debido a que junto con Git, han sido ampliamente utilizados
