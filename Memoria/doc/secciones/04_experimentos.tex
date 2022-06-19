@@ -124,13 +124,15 @@ en todo el binario es un fuerte indicativo de que o su contenido ha sido comprim
 
 Como podemos apreciar en la figura \ref{fig:binwalkEnt}, Binwalk reporta una entropía considerablemente alta para el firmware. Para comprobar si estamos
 ante un firmware cifrado intentamos identificar el contenido de este usando la flag ''-e'' en lugar de ''-E''. Al hacerlo, Binwalk es capaz de detectar 
-la presencia de tres elementos dentro del firmware (\ref{fig:binwalkExt}), una primera entrada de nombre ''TRX firmware header'' que contiene metadatos
+la presencia de tres elementos dentro del firmware (figura \ref{fig:binwalkExt}), una primera entrada de nombre ''TRX firmware header'' que contiene metadatos
 del firmware en formato TRX como un magic number, la versión de TRX en uso, longitud del header o un checksum CRC32 para comprobar la integridad del paquete. Sería posible
 identificar qué información corresponde a cada campo consultando la documentación sobre el formato TRX\cite{firmwareFormat}, pero Binwalk ya hace este trabajo 
 por nosotros. Además, Binwalk nos indica que estamos ante un firmware basado en Linux. A continuación identifica una sección de datos comprimidos usando LZMA, un algoritmo
 de compresión sin pérdidas usado en este caso para comprimir la imagen del Kernel de Linux. Por último, tenemos el sistema de archivos del dispositivo en formato
 SquashFS, un sistema de archivos de solo lectura utilizado en dispositivos de recursos limitados por sus capacidades de compresión. Tras la extracción, tenemos acceso 
-al contenido del sistema de archivos además de la imagen del Kernel.
+al contenido del sistema de archivos (figura \ref{fig:R7000squashfs}), el cual sigue la jerarquía de directorios aplicada en sistemas Linux. Además, la imagen 
+del Kernel también es extraída y haciendo uso de la herramienta ''strings'' de las Coreutils de GNU podemos comprobar que la versión del kernel en uso es la 
+2.6.36.4\ref{fig:R7000kernel}, modificada con soporte adicional para SoCs de Broadcom basados en ARM.
 
 \begin{figure}[H]
     \centering
@@ -142,13 +144,95 @@ al contenido del sistema de archivos además de la imagen del Kernel.
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.36]{r7000extraction.png}
-    \caption{Extracción firmware Netgear R7000 usando Binwalk-}
+    \caption{Extracción firmware Netgear R7000 usando Binwalk.}
     \label{fig:binwalkExt}
 \end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.46]{r7000Squashfs.png}
+    \caption{Sistema de archivos del Netgear R7000.}
+    \label{fig:R7000squashfs}
+\end{figure}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{r7000kernel.png}
+    \caption{Versión del kernel utilizada por el R7000.}
+    \label{fig:R7000kernel}
+\end{figure}
 
-
+Una vez extraído el firmware, podemos proceder a elegir un binario que nos resulte de interés para aplicarle fuzzing. Esto será
+comentado en la siguiente sección.
 
 \subsection{Introducción al experimento}
+El experimento que va a ser realizado está basado en los descubrimientos realizados por el equipo de la firma de ciberseguridad GRIMM, publicados el
+22 de Abril del 2022\cite{r7000GRIMM}. En su publicación, hacen una introducción a una vulnerabilidad detectada en el demonio UPNP presente en 
+el firmware del Netgear R7000 en su versión 1.0.11.128 y anteriores. La vulnerabilidad se da concretamente en la funcionalidad de actualización de 
+firmware proporcionada por el demonio UPNP y consiste en un buffer-overflow que puede llevar a ejecución remota de código (RCE) por parte de un usuario 
+identificado en el sistema al proporcionar un paquete de actualización de firmware malicioso. Esto es posible debido a que la rutina de actualización 
+al comprobar los headers confía en los tamaños especificados en la cabecera TRX\cite{firmwareFormat} incluida en el paquete de firmware proporcionado 
+por el usuario para realizar operaciones de memoria. A continuación, aplican emulación full-system en QEMU con el objetivo de recrear la vulnerabilidad 
+y diseñar una prueba de concepto de un firmware malicioso.\bigskip
+
+El equipo de GRIMM identificó la vulnerabilidad mediante análisis estático de código haciendo uso de herramientas de decompilación como Ghidra\cite{Ghidra}.
+Aunque se trata de una técnica efectiva, requiere de un experto cualificado que revise manualmente el código línea a línea y de un veredicto potencialmente 
+incompleto. Como es lógico, no se trata de un procedimiento que pueda ser fácilmente escalable. Además, hacen uso de emulación full-system cuando solo desean
+poner a prueba una pequeña parte de la funcionalidad del demonio. Es por ello que proponemos mejoras para ambos de los aspectos mencionados mediante la aplicación 
+de técnicas alternativas. En primer lugar, respecto al procedimiento de identificación de la vulnerabilidad podemos hacer uso de fuzzing, realizando de forma 
+automática mutaciones a la imagen del firmware que se proporciona a la rutina de actualización. Al aplicar fuzzing, posibilitamos la detección de vulnerabilidades 
+similares a gran escala y ayudamos al revisor de código a evitar tener que analizar código superfluo pudiendo centrarse en analizar los crashes detectados por
+el fuzzer, sabiendo ya que se trata de código problemático. En segundo lugar, podemos obtener una mejora de rendimiento sustituyendo la emulación full-system 
+por el uso de técnicas basadas en Unicorn\cite{unicorn} que nos permitan instrumentar exactamente la rutina de actualización de firmware incluida en el 
+demonio UPNP.\bigskip
+
+En resumen, el objetivo del experimento es intentar identificar la misma vulnerabilidad pero haciéndolo a través de fuzzing, a la misma vez que comparamos el enfoque de 
+emulación aplicado por el equipo de GRIMM con otras técnicas de emulación alternativas.
+
 \subsection{Realización del experimento}
+\subsubsection{Análisis del binario}
+Comenzaremos por identificar el binario que implementa la funcionalidad del UPNP en el firmware y cargarlo en Ghidra\cite{Ghidra} para obtener una visión
+decompilada o reconstruida del código original que nos permita encontrar la rutina de código que gestiona las actualizaciones del firmware. Para ello, 
+accedemos al sistema de archivos que fue extraído del firmware previamente y abrimos con Ghidra el binario ubicado en ''usr/sbin/upnpd''. Una vez 
+hecho esto, podemos guiar nuestra búsqueda por las cadenas de texto de mensajes de log presentes en el binario. Utilizando la funcionalidad de búsqueda 
+de strings en Ghidra podemos buscar strings relacionadas con términos como ''firmware'', ''header'', ''update'' o similares. Dado que la vulnerabilidad 
+se da a la hora de comprobar los headers del firmware, buscamos por ''header'' y rápidamente identificamos el string ''Header checksum error!!!'' 
+siendo referenciado por dos funciones distintas (figura \ref{fig:R7000string}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{r7000string.png}
+    \caption{Resultados de la búsqueda de strings en Ghidra.}
+    \label{fig:R7000string}
+\end{figure}
+
+Ambas funciones implementan aparentemente la misma lógica de parsing de la cabecera del firmware con la única diferencia de que ''FUN\_0003322c''
+(figura \ref{fig:R7000decompilado}) contiene hardcodeada el modelo del dispositivo para compararlo con un valor incluido en el firmware. 
+Ya que esta función parece destinada a nuestro modelo específico, será la función que usemos como objeto de pruebas más adelante. Realizando un breve 
+análisis del código decompilado, podemos observar que en la línea 17 se comprueba una cadena mágica para verificar que se trata de un firmware, 
+en las líneas 29 y 30 se realizan operaciones con memoria que analizaremos más adelante y de la línea 34 a la 44 se llevan a cabo comprobaciones de que 
+el firmware corresponda con el modelo de dispositivo en el que va a ser instalado.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.45]{r7000decompilado.png}
+    \caption{Función del UPNP decompilada por Ghidra.}
+    \label{fig:R7000decompilado}
+\end{figure}
+
+\subsubsection{Emulación del binario}
+Es imprescindible conseguir emular el binario como paso previo a aplicar fuzzing sin disponer del dispositivo original. Para ello, como se ha comentado 
+anteriormente pondremos a prueba tanto la metodología de emulación QEMU full-system propuesta por GRIMM en su artículo como una emulación mediante 
+Qiling\cite{qiling} que en lugar de emular el demonio en su totalidad, instrumente el binario para ejecutar exclusivamente la función que hemos identificado 
+en la sección anterior. Además, pondremos a prueba la efectividad de FirmAE\cite{Kim2020} para comprobar si pudiera proporcionar una mejor experiencia de 
+emulación full-system en comparación con QEMU básico.
+
+\paragraph{Qiling}
+\paragraph{QEMU}
+\paragraph{FirmAE}
+
+
+\subsubsection{Aplicación de fuzzing}
+
+\subsection{Resultados}
+\subsection{Lecciones aprendidas}
