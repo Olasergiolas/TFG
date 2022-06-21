@@ -260,7 +260,7 @@ con una función del script. También cabe mencionar que definiremos como ''root
 firmware previamente para que el enlazado dinámico de librerías se produzca correctamente. Definimos de la siguiente manera los
 hooks y sus funciones asociadas.
 
-\begin{lstlisting}[language=python, caption=Declaración de constantes: Direcciones de interés en funciones., captionpos=b,
+\begin{lstlisting}[language=python, caption=Definición de hooks del script de emulación para Qiling., captionpos=b,
     frame=single, breaklines]
     def libc_start_main_redirect(ql: Qiling, func_addr = TARGET_FUNC_ADDR):
     ql.reg.write("r0", func_addr)
@@ -335,10 +335,402 @@ emulando el binario al completo.
 \end{figure}
 
 \paragraph{QEMU}
-\paragraph{FirmAE}
+Para emular el firmware aplicando emulación full-system en QEMU, es más viable obtener una máquina virtual Linux para sistemas ARM 
+y ejecutar en esta los binarios de interés antes que intentar emular el firmware del dispositivo al completo, debido a la 
+necesidad de tener que manualmente solucionar los problemas de compatibilidad por aspectos como diferencias en la configuración 
+de interfaces red o la ausencia de dispositivos necesarios durante el arranque del sistema como hemos comprobado anteriormente 
+con el NVRAM. Por ello, partimos de una VM de Debian ARM (debian-10-openstack-arm64.qcow2) obtenida de su  
+\href{https://cdimage.debian.org/cdimage/cloud/OpenStack/}{web oficial} en la que introduciremos el sistema de archivos extraído del firmware 
+del R7000 para ejecutar el binario del servicio UPNP teniendo todas las librerías necesarias para ello. Utilizamos la siguiente 
+orden para arrancar la máquina virtual descargada con 2GB de RAM, todos los núcleos disponibles de la CPU, almacenamiento, un 
+adaptador de red y los puertos 22 y 5000 redirigidos a la máquina host. El puerto 22 será de utilidad para acceder 
+mediante SSH a la máquina virtual mientras que el 5000 lo necesitamos para poder realizar peticiones por el protocolo SOAP, que 
+es el protocolo utilizado por el demonio UPNP para interactuar con este desde el exterior.
 
+\begin{lstlisting}[language=bash, breaklines]
+    $ qemu-system-aarch64 -m 2G -M virt -cpu max -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd -drive if=none,file=debian-10-openstack-arm64.qcow2,id=hd0 -device virtio-blk-device,drive=hd0 -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp:127.0.0.1:1234-:22,hostfwd=tcp::5000-:5000 -nographic
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.55]{r7000QemuBoot.png}
+    \caption{Grub menu from the ARM QEMU VM.}
+    \label{fig:R7000QemuBoot}
+\end{figure}
+
+Al finalizar el arranque de la máquina virtual, podemos utilizar \textit{chroot} para cambiar el directorio raíz actual al directorio 
+del sistema de archivos extraído del router previamente (figura \ref{fig:R7000shell}). Desafortunadamente, al poner en marcha el 
+servicio del UPNP comprobamos que no es capaz de funcionar correctamente en el entorno virtual actual. Como documenta GRIMM\cite{r7000GRIMM}
+en sus descubrimientos, esto se debe a una mala configuración de las interfaces red y a la falta de una NVRAM desde la que leer los 
+parámetros de configuración del servicio. Este tipo de problemas son de esperar al aplicar técnicas de emulación full-system y han 
+de ser solventados para conseguir que el demonio se ejecute correctamente.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.55]{r7000shell.png}
+    \caption{Busybox shell desde el sistema de archivos del R7000.}
+    \label{fig:R7000shell}
+\end{figure}
+
+Para solucionar estos problemas haremos uso de las soluciones proporcionadas por el equipo de GRIMM\cite{r7000GRIMM}. En primer
+lugar, modificaremos el flujo de ejecución del binario con GDB para evitar llamar a \textit{exit()} al fallar el bloque de código 
+que realizar la comprobación de las interfaces de red. Como podemos ver en la versión decompilada del código que realiza dicha 
+comprobación mostrada en la figura \ref{fig:R7000iffix}, será necesario establecer un breakpoint al llegar a ''FUN\_0000e4c8''
+para que cuando esto suceda, cambiar el contador de programa a la dirección del return de la función con el objetivo de saltarnos 
+la comprobación. Para solucionar la falta de una NVRAM, reemplazaremos la librería dinámica ''libnvram.so'' del sistema de archivos 
+por una versión modificada de nvram-faker\cite{nvram} que GRIMM proporciona con las variables extraídas de un dispositivo original.
+Esto resulta un claro punto negativo para la aplicación de emulación full-system, ya que para conseguir que nuestro binario de 
+interés se ejecute correctamente, hubiéramos necesitado disponer del dispositivo original e identificar todas las variables 
+consultadas en la NVRAM y sus valores esperados a través de ingeniería inversa y análisis estático de código no resulta viable. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.65]{r7000iffix.png}
+    \caption{Rutina de comprobación de interfaces de red R7000.}
+    \label{fig:R7000iffix}
+\end{figure}
+
+Tras solucionar los problemas encontrados, hacemos uso de la siguiente orden para automatizar el proceso de hacer \textit{chroot}
+al sistema de archivos, ejecutar UPNP en segundo plano, attachear GDB a este proceso y llevar a cabo el cambio de flujo descrito.
+Esta vez, ya es posible realizar peticiones por el puerto 5000 al servicio a través de CURL (figura \ref{fig:R7000QemuWorking}). Por ahora nos sirve 
+con saber que el servicio es capaz de responder peticiones pero más adelante, crearemos un script para llevar a cabo las peticiones 
+SOAP necesarias a través de HTTP para iniciar la funcionalidad de actualización de firmware.
+
+\begin{lstlisting}[language=bash, breaklines]
+    $ chroot squashfs-root /bin/sh -c "/usr/sbin/upnpd&" && gdb -x ./gdb_script -q -p `pgrep upnpd`
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.65]{r7000QemuWorking.png}
+    \caption{UPNP respondiendo una petición GET básica.}
+    \label{fig:R7000QemuWorking}
+\end{figure}
+
+\paragraph{FirmAE}
+Como se comentó en el apartado ''\nameref{estado_del_arte}'', FirmAE fue desarrollado con el objetivo de poder solucionar mediante heurísticas 
+pequeños problemas de configuración como los que hemos experimentado al intentar emular el binario con QEMU básico. Por ello, 
+procederemos a poner esta herramienta en práctica para comprobar si supone alguna mejoría con respecto a la metodología seguida
+por GRIMM\cite{r7000GRIMM}.\bigskip
+
+Iniciar la emulación del firmware con FirmAE es tan simple como indicarle la ruta a la imagen firmware del dispositivo. A continuación, 
+FirmAE analiza dinámicamente el firmware durante aproximádamente diez minutos para intentar detectar problemas de configuración y 
+ajustar el entorno de emulación con el objetivo de satisfacer sus necesidades (figura \ref{fig:R7000FirmAE}). 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.54]{r7000FirmAE.png}
+    \caption{Instancia de FirmAE emulando el firmware de un R7000.}
+    \label{fig:R7000FirmAE}
+\end{figure}
+
+Al intentar acceder a la dirección IP local que ha habilitado FirmAE para el portal web del dispositivo, nos encontramos con el proceso de 
+setup original de Netgear (figura \ref{fig:R7000Setup}) el cual no podemos completar porque el resto del proceso de configuración se lleva a cabo
+en la dirección ''www.routerlogin.net'' y se asume que se está utilizando el servidor DNS del router emulado, por lo que no se nos redirige 
+correctamente a la configuración al visitar dicha dirección. Esto puede solucionarse editando el fichero ''/etc/hosts'' en Linux para que 
+el hostname ''routerlogin.net'' resuelva a la dirección IP asignada por FirmAE. Tras este cambio somos capaces de finalizar el setup inicial 
+y de acceder al panel de control del router (figura \ref{fig:R7000panel}). 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{r7000Setup.png}
+    \caption{Setup de configuración del R7000.}
+    \label{fig:R7000Setup}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.45]{r7000panel.png}
+    \caption{Panel de control del R7000.}
+    \label{fig:R7000panel}
+\end{figure}
+
+Por desgracia, aunque el portal web principal parece estar siendo correctamente emulado, solo obtenemos ''empty response'' al realizar peticiones
+por el puerto 5000 al demonio UPNP. Ejecutando manualmente el binario desde la shell proporcionada por FirmAE, observamos que la ejecución 
+entra en un bucle infinito intentando llevar a cabo operaciones en exclusión mutua relacionadas con el uso de variables de la NVRAM 
+(figura \ref{fig:R7000FirmAEupnp}). Dado que el problema sigue presente incluso al usar nvram-faker\cite{nvram}, la emulación del firmware
+a través de FirmAE queda descartada.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{r7000FirmAEupnp.png}
+    \caption{Bucle infinito al ejecutar UPNP con FirmAE.}
+    \label{fig:R7000FirmAEupnp}
+\end{figure}
 
 \subsubsection{Aplicación de fuzzing}
+Tras conseguir emular el servicio UPNP del firmware aplicando tanto emulación full-system en QEMU como emulación basada en Unicorn\cite{unicorn}
+con Qiling\cite{qiling}, procederemos a aplicar fuzzing sobre dicho servicio con el objetivo de explorar otras técnicas a partir de las cuales 
+se podría haber llegado a esta vulnerabilidad además de compararlas entre sí.
+
+\paragraph{Vulnerabilidad a identificar} Como se ha comentado en la introducción al experimento, buscamos alcanzar a través de fuzzing una 
+vulnerabilidad previamente conocida y gracias a que partimos sabiendo qué se trata buscar, procederemos a analizar brevemente dicha vulnerabilidad
+sobre el código decompilado (figura \ref{fig:UpnpCheckHeader}) con el objetivo de facilitar al lector la comprensión del experimento, los problemas encontrados y los resultados de este. 
+El funcionamiento de ''check\_upd\_header()'' puede dividirse en cinco pasos principales. En primer lugar, se comprueba que el firmware tenga 
+la cadena mágica ''*\#\$\textasciicircum'' al inicio mediante una llamada a la función \textit{strcmp} sobre el array de bytes que representa al 
+firmware. Esto es posible debido a que las cadenas de caracteres en C vienen delimitadas por un byte nulo al final y recordemos que los campos de 
+las cabeceras TRX\cite{firmwareFormat} vienen también delimitadas por bytes nulos. En el segundo paso observamos como se utiliza la siguiente 
+sección de la cabecera para obtener el tamaño de esta. El principal problema de este paso y el factor que causa la vulnerabilidad que estamos tratando
+es la ausencia de validación de los datos que están siendo recibidos del exterior los cuales nunca deberían de ser confiados, aún menos cuando 
+ese input va a ser utilizado como parámetro en operaciones con memoria a continuación en el tercer paso. Dado que el usuario desde el exterior
+puede fijar cuantos bytes van a ser copiados sobre el buffer de destino, este podría provocar un desbordamiento de la pila, pudiendo también modificar la 
+dirección de retorno de la función además de diversos registros usados para almacenar variables locales en ARM32 (R4-R11). Por último, en los pasos 
+cuatro y cinco se llevan a cabo comprobaciones adicionales sobre el checksum y el modelo del dispositivo para evitar que el usuario aplique un paquete
+de firmware incorrecto o corrompido.
+
+Para que un fuzzer sea capaz de identificar el crash producido por el desbordamiento de la pila, este tendrá que generar un input mutado que respete la 
+cadena mágica inicial además de incluir en el campo del tamaño de la cabecera un valor superior al admitido por el buffer de destino ubicado en la pila.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.55]{UpnpCheckHeader.png}
+    \caption{Decompilado de la función ''check\_upd\_header()'' comentado.}
+    \label{fig:UpnpCheckHeader}
+\end{figure}
+
+\paragraph{Fuzzing con Qiling}
+Para realizar fuzzing usando Qiling, partimos del script que ha sido desarrollado previamente para la emulación e instrumentación del binario al
+cual se le realizarán algunas modificaciones para integrar la lectura de inputs con un fuzzer de caja gris como es AFL++\cite{afl++}. Además, también se 
+creará una versión del script que utilice a Radamsa\cite{radamsa} como generador de inputs para poder comprobar si un fuzzer de caja negra
+pudiera dar mejores resultados que uno de caja gris en determinadas situaciones.\bigskip
+
+Empezando por integrar el script de Qiling con AFL++, haremos uso de los bindings para Python que proporciona AFL++ como parte de su integración
+con Unicorn. El flujo de ejecución será el mismo, con la diferencia de que el almacenamiento de los bytes del header en memoria se hará ahora 
+dentro de un callback que será llamado por AFL++ cada vez que este desee realizar una nueva iteración durante el fuzzing. De esta forma hacemos
+uso de dos hooks, un primer hook que lleva a cabo el cambio del punto de entrada del binario de la misma forma que en el script de emulación y un 
+segundo que llama a una función encargada de reportar a AFL++ que se ha llegado al punto de inicio para el fuzzing. Por último, adelantamos la 
+dirección en la que finaliza la ejecución del binario modificando ''TARGET\_END\_ADDR'' para evitar realizar las comparaciones del modelo del 
+dispositivo, ya que de todas formas no estaban siendo emuladas correctamente al carecer de una NVRAM. Tener que emular un menor número de 
+instrucciones por ejecución del script supone una mejora en el número de ejecuciones por segundo. El script resultante es el siguiente donde 
+''place\_input\_callback()'' es la función llamada por AFL++ para almacenar los inputs mutados en memoria y ''start\_afl()'' la función a ejecutar 
+al llegar ''check\_upd\_header()'' para comenzar una nueva iteración de fuzzing.
+
+\begin{lstlisting}[language=python, caption=Script de fuzzing de UPNP para Qiling., captionpos=b,
+    frame=single, breaklines, showstringspaces=false]
+    import sys, os
+    from qiling import Qiling
+    from qiling.extensions.afl import ql_afl_fuzz
+    
+    TARGET_FUNC_ADDR    = 0x3322c   # Address of the function we are interested in
+    TARGET_END_ADDR     = 0x3330c   # End fuzzing when reaching this address
+    LIBC_START_ADDR     = 0x0c460   # Address where __libc_start_main is being called
+        
+    def libc_start_main_redirect(ql: Qiling, func_addr = TARGET_FUNC_ADDR):
+        ql.arch.regs.write("r0", func_addr)
+        
+    def sandbox(path, rootfs, debug, param_file):
+        ql = Qiling(path, rootfs)
+        ql.hook_address(libc_start_main_redirect, LIBC_START_ADDR)
+        
+        def place_input_callback(_ql: Qiling, input: bytes, _):
+            address = _ql.mem.map_anywhere(len(input))
+            
+            print("\n\n FILE LENGTH (bytes): ", len(input))
+            
+            _ql.mem.write(address, input)
+            _ql.arch.regs.write("r0", address)
+            
+            res = _ql.mem.read(address, len(input));
+            print("\n\n FUNCTION INPUT BYTES: \n\n", input)
+            print("\n\n BYTES STORED IN MEMORY: \n\n", res)
+            
+        def start_afl(_ql: Qiling):
+            ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[ql.os.exit_point])
+        
+        ql.hook_address(start_afl, TARGET_FUNC_ADDR)
+    
+        try:
+            ql.run()
+            os._exit(0)
+        except:
+            os._exit(1)
+        
+        ...
+\end{lstlisting}
+
+Gracias a nuestro script, podemos iniciar una sesión de fuzzing en AFL++ (figura \ref{fig:R7000QilingFuzz}) con la siguiente orden, donde ''fuzz\_setup/in''
+es un directorio que contiene un corpus formado por los primeros 1024 bytes de las dos imágenes del firmware en sus versiones 1.0.11.128 y 1.0.11.134,
+mientras que ''fuzz\_setup/out'' será el directorio donde AFL++ almacene los resultados de la sesión de fuzzing (crashes o timeouts identificados, estadísticas de 
+la sesión\dots). Además, con el objetivo de reducir el número de inputs que son descartados prematuramente en la comprobación de la cadena mágica, 
+hacemos uso de la funcionalidad de diccionarios de AFL++ (flag -x) con un diccionario que contenga la cadena ''*\#\$\textasciicircum''.
+\begin{lstlisting}[language=bash, breaklines]
+    $ afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -x dict/dictionary -U -- python3 ./src/dev/fuzz.py @@
+\end{lstlisting}
+
+Viendo que el fuzzing se realiza correctamente y que se descubren nuevos paths a explorar en el código, procedemos a dejar la 
+sesión de fuzzing corriendo hasta que llegue el punto en el que AFL++ no detecte nuevos sucesos durante el fuzzing. AFL++ indica cuándo
+esto sucede a través del color de la variable ''cycles done'', la cual cambia a color verde cuando no se ha alcanzado nuevo código 
+ni se han visto diferencias en el comportamiento de este durante un tiempo. En este caso, el tiempo que se dedicó al proceso de fuzzing 
+fue un total de 20 horas y 31 minutos corriendo en modo paralelo con 3 instancias del fuzzer simultáneas (\ref{fig:R7000parallel}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{r7000QilingFuzz.png}
+    \caption{Sesión de fuzzing sobre UPNP usando Qiling.}
+    \label{fig:R7000QilingFuzz}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{AFLparallel.png}
+    \caption{Sesión de fuzzing sobre UPNP con tres instancias en paralelo.}
+    \label{fig:R7000parallel}
+\end{figure}
+
+\paragraph{Fuzzing con QEMU full-system}
+Para este caso desarrollaremos un script en Python que nos permita llevar a cabo repetidas peticiones HTTP
+al servicio UPNP mutando exclusivamente el firmware enviado. Para el aspecto de la generación de
+inputs utilizaremos el fuzzer de caja negra Radamsa\cite{radamsa} debido a su excelente algoritmo 
+de mutación además de estar diseñado para ser fácilmente integrable con scripts. Este experimento nos 
+permitirá comprobar si la información adicional de feedback utilizada en el fuzzing de caja gris es 
+de utilidad para este caso en comparación con el fuzzing de caja negra.\bigskip
+
+El script a desarrollar deberá de en primer lugar, iniciar sesión en el servicio UPNP para obtener una cookie de sesión
+previamente a mutar el firmware y enviarlo. Ya que UPNP trabaja en este caso mediante el protocolo SOAP a través de HTTP,
+tendremos que realizar peticiones que sigan el formato correspondiente como podemos observar en la figura \ref{fig:SOAPlogin}
+para la obtención de la cookie de sesión y en la figura \ref{fig:SOAPupdate} para iniciar la actualización de firmware.
+Ambas peticiones serán tratadas más en profundidad a continuación con el desarrollo del script.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{SOAPlogin.png}
+    \caption{Petición de login al servicio UPNP.}
+    \label{fig:SOAPlogin}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{SOAPupdate.png}
+    \caption{Petición de actualización de firmware al servicio UPNP.}
+    \label{fig:SOAPupdate}
+\end{figure}
+
+La función ''login()'' de nuestro script enviará una petición HTTP al endpoint 
+''http://127.0.0.1:5000/soap/server\_sa'', indicando en la cabecera que la acción SOAP a realizar es ''SOAPLogin''
+e incluyendo en los datos de la petición el usuario y contraseña por defecto del administrador. Una vez 
+recibida la respuesta, extraemos el valor de la cookie ''sess\_id'' para realizar posteriormente peticiones
+autenticadas.
+
+\begin{lstlisting}[language=python, caption=Función para realizar login en el servicio UPNP., captionpos=b,
+    frame=single, breaklines, showstringspaces=false]
+    def login():
+        url = 'http://127.0.0.1:5000/soap/server_sa'
+        header = {'SOAPAction': 'urn:NETGEAR-ROUTER:service:DeviceConfig:1#SOAPLogin'}
+        data = '<Username>admin</Username><Password>password123</Password>'
+        
+        response = requests.post(url, headers=header, data=data)
+        cookie = response.cookies.get_dict()["sess_id"]
+        return cookie
+\end{lstlisting}
+
+La función ''sendUpdate()'' iniciará el proceso de actualización de firmware mandando la petición correspondiente al 
+UPNP. Para ello, se enviará otra petición al mismo endpoint ahora con la acción SOAP ''UpdateNewFirmware'' en el header,
+incluyendo la cookie de sesión obtenida por la función ''login()'', además del firmware codificado en base64 como parámetro 
+de la petición dentro de un XML. Dado el enfoque de caja negra que estamos aplicando en este caso, la forma en la que comprobamos 
+si la petición realizada ha producido algún efecto adverso en el servicio es realizando un liveness-check con la función ''crashTest()''
+cuando el servicio no ha respondido correctamente nuestra petición de actualización de firmware. De esta forma, si se produce algún error
+en la conexión, se realizará una simple petición HTTP al servicio UPNP para verificar si este sigue operativo. En caso de fallar la 
+verificación asumimos que se ha producido un crash, registramos el timestamp y almacenamos el input mutado que lo ha generado con la función
+''dumpCrash()''.
+
+\begin{lstlisting}[language=python, caption=Envío de actualización de firmware al servicio UPNP., captionpos=b,
+    frame=single, breaklines, showstringspaces=false]
+    def sendUpdate(loginCookie, xml):
+        timeout = 10
+        url = 'http://127.0.0.1:5000/soap/server_sa'
+        header = {'SOAPAction': 'urn:NETGEAR-ROUTER:service:DeviceConfig:1#UpdateNewFirmware'}
+        cookie = {'sess_id': loginCookie}
+        data = xml
+        
+        try:
+            response = requests.post(url, data=data, headers=header, cookies=cookie, timeout=timeout)
+            print(response.text)
+        except requests.exceptions.ConnectionError:
+            print("Connection aborted :(\n")
+            if (crashTest()):
+                dumpCrash(xml)
+                
+        except requests.exceptions.ReadTimeout:
+            dumpCrash(xml)
+
+    def crashTest():
+        url = 'http://127.0.0.1:5000/soap/server_sa'
+        try:
+            requests.get(url)
+            return False
+        except:
+            return True
+
+    def dumpCrash(xml):
+        print("\nFOUND POTENTIAL CRASH\n")
+        ts = datetime.datetime.now().strftime("%m-%d-%Y_%H:%M:%S") + ".dmp"
+        print("Saving dump at ./"+ts)
+        f = open(ts, "w+")
+        f.write(xml)
+        f.close()
+        exit(1)
+\end{lstlisting}
+
+Respecto a la generación del XML, la API SOAP requiere que los datos incluidos como parte de la petición han de estar estructurados 
+dentro de un SOAP Envelope. Concretamente, necesitaremos incluir el firmware dentro del cuerpo del envelope indicando también en este 
+la acción de ''UpdateNewFirmware''. Esta funcionalidad queda implementada en la función ''craftXML()''.
+
+\begin{lstlisting}[language=python, caption=Generación del XML envelope con el firmware para la actualización desde UPNP., captionpos=b,
+    frame=single, breaklines, showstringspaces=false]
+    def craftXML(payload):
+        xml = '<?xml version="1.0"?>\r\n'
+        xml += '<SOAP-ENV:Envelope xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/" SOAP-ENV:encodingStyle="http://schemas.xmlsoap.$\r\n'
+        xml += '<SOAP-ENV:Body>\r\n'
+        xml += 'UpdateNewFirmware\r\n'
+        xml += '<NewFirmware>\r\n'
+        xml += base64.b64encode(payload).decode("utf-8")
+        xml += '\r\n</NewFirmware>\r\n'
+        xml += '</SOAP-ENV:Body>\r\n'
+        xml += '</SOAP-ENV:Envelope>\r\n'
+        
+        return xml
+\end{lstlisting}
+
+Por último, debemos gestionar la mutación del firmware para poder llevar a cabo el proceso de fuzzing. Radamsa realiza las 
+mutaciones a partir de una semilla y de un primer input que utilizará como punto de partida. La semilla es un valor numérico 
+que puede ser aleatorio o fijado manualmente si se desea que se generen mutaciones deterministas, por lo que ofreceremos en 
+el script la posibilidad de fijar un valor inicial para la semilla el cual irá siendo incrementado. En resumen, se invocará
+a Radamsa dentro de un bucle infinito utilizando la imagen firmware versión 1.0.11.134 como punto de partida y se utilizará 
+el output generado en cada iteración para realizar una petición de actualización de firmware al servicio UPNP, intentando 
+detectar si alguna de las peticiones realizadas consigue afectar al correcto funcionamiento del servicio.
+
+\begin{lstlisting}[language=python, caption=Integración con Radamsa para mutación de inputs., captionpos=b,
+    frame=single, breaklines, showstringspaces=false]
+    while(True):
+        command = 'radamsa '
+        
+        if seed:
+            command += '--seed ' + "% s" % seed + ' '
+            seed += 1
+        
+        payload = subprocess.check_output(command + firmware_path, shell=True)
+        xml = craftXML(payload)
+        sendUpdate(cookie, xml)
+\end{lstlisting}
+
+Con el script completado y el servicio UPNP corriendo en la máquina virtual de QEMU, solo queda ejecutar el script para 
+comenzar la sesión de fuzzing. En la figura \ref{fig:SOAPfuzzing} vemos como desde el script se van recibiendo las respuestas a las peticiones 
+realizadas al servicio mientras que en la figura \ref{fig:SOAPprocessing} podemos ver los mensajes generados internamente por
+UPNP al procesar las peticiones.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{SOAPfuzzing.png}
+    \caption{Funcionamiento del script de fuzzing HTTP a UPNP.}
+    \label{fig:SOAPfuzzing}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{SOAPprocessing.png}
+    \caption{Servicio UPNP emulado procesando peticiones.}
+    \label{fig:SOAPprocessing}
+\end{figure}
 
 \subsection{Resultados}
 \subsection{Lecciones aprendidas}
