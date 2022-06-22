@@ -26,7 +26,7 @@ encontramos que posee una CPU de 1GHz dual-core, 256MB de RAM, 128MB de memoria 
 no son lo suficientemente detalladas como para aportarnos información clave que necesitamos conocer para aplicar emulación sobre el dispositivo.
 Principalmente, desconocemos el procesador que está siendo utilizado y su arquitectura, ya que el fabricante no proporciona dicha información.
 Cuando nos encontramos en esta situación en la que deseamos conocer información más detallada sobre los componentes internos de un dispositivo, 
-una posible solución es consultar su informe de aceptación para la certificación del FCC [TBD REFERENCIA] en la base de datos \hyperlink{fccid.io}{fccid.io}.
+una posible solución es consultar su informe de aceptación para la certificación del FCC\cite{fcc} [TBD REFERENCIA] en la base de datos \hyperlink{fccid.io}{fccid.io}.
 El FCC es un organismo de certificación encargado de evaluar todo producto que vaya a ser comercializado en los Estados Unidos que emita 
 radiofrecuencias con el fin de asegurar que dichos dispositivos no produzcan interferencias dañinas que pudieran afectar al correcto
 funcionamiento de otros dispositivos como equipamiento médico, aeronáutico o sistemas de telecomunicaciones.\bigskip
@@ -329,7 +329,7 @@ emulando el binario al completo.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.5]{r7000magic.png}
+    \includegraphics[scale=0.65]{r7000magic.png}
     \caption{Fallo al comprobar la cadena mágica en Qiling.}
     \label{fig:R7000magic}
 \end{figure}
@@ -414,7 +414,7 @@ procederemos a poner esta herramienta en práctica para comprobar si supone algu
 por GRIMM\cite{r7000GRIMM}.\bigskip
 
 Iniciar la emulación del firmware con FirmAE es tan simple como indicarle la ruta a la imagen firmware del dispositivo. A continuación, 
-FirmAE analiza dinámicamente el firmware durante aproximádamente diez minutos para intentar detectar problemas de configuración y 
+FirmAE analiza dinámicamente el firmware durante aproximadamente diez minutos para intentar detectar problemas de configuración y 
 ajustar el entorno de emulación con el objetivo de satisfacer sus necesidades (figura \ref{fig:R7000FirmAE}). 
 
 \begin{figure}[H]
@@ -733,4 +733,122 @@ UPNP al procesar las peticiones.
 \end{figure}
 
 \subsection{Resultados}
+\subsubsection{Fuzzing con Qiling y AFL++}
+Usar un script de Qiling con los bindings de python de Unicornafl para la integración con AFL++ ha resultado ser la opción menos efectiva. 
+Aunque la parte de emulación se llevaba a cabo correctamente y con un gran incremento de velocidad gracias a tener que emular solo una función de 
+código, tras las veinte horas y media de fuzzing no se detectó un solo crash ni timeout. Para analizar lo que estaba sucediendo, podemos hacer 
+uso de la variable de entorno ''AFL\_DEBUG\_CHILD'' para ver el output del script en cada iteración de fuzzing. Haciendo esto, se detectaron dos 
+problemas en la sesión de fuzzing causados por el mismo problema, uno a la hora de parsear los inputs del corpus y otro a la hora de mutarlos.\bigskip
+
+Analizando el output de debugging se descubrió que Unicornafl, el componente de AFL++ que 
+aporta la integración con Unicorn (y consecuentemente, Qiling) no gestiona correctamente los inputs que utilizan bytes nulos intercalados 
+entre el resto de bytes. Esto provoca que por ejemplo, para las cabeceras de firmware que utilizamos como parte del corpus sus bytes sean 
+tratados como una string de C y no como bytes, es decir, que a partir del primer byte nulo, el resto de bytes a continuación sean ignorados 
+(figura \ref{fig:QilingDebug}). De esta forma, cuando AFL++ recibe un input para mutarlo, solo recibe los bytes de la primera sección 
+de la cabecera TRX (la cadena mágica) y no es capaz 
+de respetar la separación entre los campos de la cabecera mediante bytes nulos. Esto explica por qué no se ha obtenido ningún crash, ya que 
+nunca se ha dado el caso de haber generado un input con la cadena mágica correcta delimitada por un byte nulo que además tuviera una valor 
+excesivo en el siguiente campo del header para la longitud de este. Este problema ha sido discutido y reconocido por los principales 
+desarrolladores del proyecto a través de Telegram y se ha dejado constancia a mediante la creación de un reporte a modo de issue en su repositorio
+de \href{https://github.com/AFLplusplus/unicornafl/issues/13}{Github}. 
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{QilingDebug.png}
+    \caption{Mensajes de depuración en el script de Qiling mostrando la incorrecta gestión de inputs.}
+    \label{fig:QilingDebug}
+\end{figure}
+
+Como solución temporal, podemos manualmente en el script de Qiling modificar el callback que almacena los inputs en memoria para fijar a 0
+los bytes que actúen como delimitadores de las distintas secciones de una cabecera TRX. Por ejemplo, solo fijando a 0 el byte cuarto del input
+(el que delimita la cadena mágica) ya podemos ver crashes en AFL++ en alrededor de un minuto (figura \ref{fig:QilingCheat}). Al analizar uno 
+de los crashes generados (\ref{fig:UPNPQilingCrash}) apreciamos que efectivamente, AFL++ no ha introducido bytes nulos en el input para
+separar las secciones y que si ha crasheado, ha sido por introducirlos manualmente desde el script previamente a almacenar los inputs en memoria.
+En rojo los bytes que representan la cadena mágica, en verde el byte que será reemplazado a $\backslash$x00 como delimitador dentro del script y en
+azul los bytes que indican el tamaño de la cabecera.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{QilingCheat.png}
+    \caption{Fuzzing de UPNP con Qiling y AFL++ fijando manualmente el fin de la cadena mágica.}
+    \label{fig:QilingCheat}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{UPNPQilingCrash.png}
+    \caption{Cabecera firmware mutada por AFL++.}
+    \label{fig:UPNPQilingCrash}
+\end{figure}
+
+Como hemos comentado, aunque la sesión de fuzzing no ha sido exitosa, Qiling ha dado muy buenos resultados a la hora de emular e instrumentar dinámicamente 
+el binario. Es por ello que de estos resultados surge un pequeño experimento adicional. Esto es, integrar Radamsa con nuestro script de emulación de Qiling
+para tener así un caso extra que nos permita comparar los resultados de fuzzear sobre emulación full-system en comparación con emulación basada en Unicorn 
+manteniendo un mismo fuzzer. Respecto a las modificaciones del script, solo será necesario cambiar desde dónde obtiene el script el firmware por la misma
+integración con Radamsa que hemos aplicado en el script de fuzzing a través de HTTP implementado anteriormente. Sorprendentemente, Radamsa
+si que es capaz de identificar y respetar algunos de los campos presentes en las cabeceras, consiguiendo encontrar un crash en el binario
+en aproximadamente 10 segundos haciendo uso del modo determinista y partiendo de la imagen firmware versión 1.0.11.134 (figura \ref{fig:UPNPQilingRadamsaCrash}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.55]{UPNPQilingRadamsaCrash.png}
+    \caption{Crash en UPNP identificado por Radamsa + Qiling.}
+    \label{fig:UPNPQilingRadamsaCrash}
+\end{figure}
+
+
+\subsubsection{Fuzzing con QEMU full-system y Radamsa}
+Al igual que Radamsa ha sido capaz de identificar el crash emulando el binario con Qiling en el caso anterior, también se ha llegado al mismo 
+crash mediante el script desarrollado previamente que utiliza a Radamsa como fuzzer y va realizando peticiones SOAP a través de HTTP al 
+demonio UPNP corriendo en la VM de QEMU ARM. La emulación tanto del sistema como del servicio ha sido estable durante todo el proceso de
+fuzzing y UPNP era capaz de procesar correctamente las cabeceras del firmware enviado y de detectar si se producía algún fallo en la comprobación
+de la cadena mágica o del checksum al igual que en Qiling. Para encontrar el mismo crash, partiendo de la misma semilla y funcionando en modo 
+determinista, el script necesitó 1 minuto y 17 segundos (figura \ref{fig:UPNPQEMURadamsaCrash}), siendo el XML de la figura \ref{fig:UPNPQEMURadamsaCrashXML}
+el causante del crash. Si comprobamos el estado del demonio en la VM (\ref{fig:UPNPsegfault}) observamos que como era de esperar, se ha producido un segmentation-fault
+en la librería estándar de C (libc.so.0) mientras se realizaba la llamada a \textit{memcpy}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{UPNPQEMURadamsaCrash.png}
+    \caption{Crash en UPNP identificado por Radamsa a través de peticiones HTTP.}
+    \label{fig:UPNPQEMURadamsaCrash}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{UPNPQEMURadamsaCrashXML.png}
+    \caption{Payload XML que ha causado el crash del servicio UPNP.}
+    \label{fig:UPNPQEMURadamsaCrashXML}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{UPNPsegfault.png}
+    \caption{Segmentation-fault producido en UPNP durante el proceso de fuzzing HTTP.}
+    \label{fig:UPNPsegfault}
+\end{figure}
+
+El gran incremento de tiempo para alcanzar la vulnerabilidad comparado con la aplicación de Radamsa junto a Qiling es comprensible, ya que 
+no solo es necesario tener en cuenta el overhead de emular el sistema operativo al completo, sino que también las penalizaciones adicionales 
+de rendimiento por emular el servicio al completo y por tener que enviar el firmware a través de peticiones HTTP.
+
 \subsection{Lecciones aprendidas}
+La realización de este experimento nos ha permitido sacar ciertas conclusiones respecto a la emulación y fuzzing de software orientado a IoT.
+Principalmente podemos destacar los siguientes puntos:
+\begin{itemize}
+    \item Debido a que estamos ante una vulnerabilidad relativamente simple, hemos podido comprobar que hay casos para los que el uso de un 
+    fuzzer de caja gris no aporta ninguna ventaja con respecto a aplicar fuzzing de caja negra. Obviando el bug de Unicornafl que hemos
+    discutido, ambas técnicas han sido capaces de identificar la vulnerabilidad en periodos de tiempo similares.
+    \item La integración de AFL++ con Unicorn/Qiling no está todavía lista para ser ampliamente adoptada por el público general. No es una 
+    buena experiencia de usuario el no poder discernir si un problema encontrado durante el fuzzing es producido por un fallo personal 
+    o por un fallo en la implementación de la herramienta.
+    \item El uso del framework de Qiling resulta de gran utilidad cuando se quiere emular funcionalidad muy concreta de un binario y su 
+    uso en combinación con otras herramientas de fuzzing facilita considerablemente el adaptar el binario al proceso de fuzzing gracias a 
+    sus capacidades de instrumentación dinámica.
+    \item Es recomendable depurar las sesiones de fuzzing para comprobar que el proceso se está realizando correctamente. En muchas ocasiones,
+    es muy fácil cometer un error al realizar las preparaciones previas al fuzzing y es posible que aunque a primera vista el proceso se esté 
+    llevando a cabo correctamente, realmente no se esté alcanzando el código que deseamos o no se estén identificando crashes que deberían de 
+    ser registrados.
+    \item La emulación full-system no nos permite prescindir completamente del hardware original, ya que como hemos podido comprobar, hay ciertos 
+    casos para los que o se necesita extraer información del dispositivo original como variables de configuración o resulta difícil conseguir 
+    emular a la perfección todos los periféricos requeridos.
+\end{itemize}

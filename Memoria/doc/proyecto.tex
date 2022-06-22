@@ -42,6 +42,19 @@
 \fancyfoot[R]{\thepage} % Page numbering for right footer
 %\renewcommand{\headrulewidth}{0pt} % Remove header underlines
 \renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+\lstset{
+	backgroundcolor=\color{backcolour},
+	basicstyle=\ttfamily,
+	columns=fullflexible,
+	frame=single,
+	breaklines=true,
+	escapeinside={\%*}{*)},
+	aboveskip=\bigskipamount,
+	belowskip=\bigskipamount,
+	showstringspaces=false,
+	tabsize=2
+}
 \setlength{\headheight}{13.6pt} % Customize the height of the header
 
 \usepackage{titlesec, blindtext, color}
