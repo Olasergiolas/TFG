@@ -56,8 +56,8 @@ por el dispositivo receptor. Partiendo de dicho concepto, estos fuzzers analizan
 métodos que envíen mensajes al dispositivo y mediante instrumentación dinámica, ejecutan estos métodos cambiando el valor de sus parámetros. La principal diferencia 
 entre ambos reside en el componente de la app móvil que toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz gráfica de la app
 para introducir la información mutada de forma similar a como lo haría un usuario real. Dicho planteamiento presenta el inconveniente de que este tipo 
-de apps suelen sanitizar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la app móvil.
-''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados después de la sanitización de los inputs pero antes de
+de apps suelen filtrar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la app móvil.
+''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados después del filtrado de los inputs pero antes de
 que se realice el envío del mensaje al dispositivo IoT. Por desgracia, las técnicas de fuzzing de caja negra que trabajan sobre el dispositivo IoT
 directamente, ya sea haciéndole peticiones o ejecutando código en el hardware, suponen un gran sacrificio respecto a rendimiento ya que un hardware 
 tan limitado como el encontrado en dispositivos empotrados nunca será capaz de aportar una alta tasa de ejecuciones/respuestas por segundo, siendo esto un 
