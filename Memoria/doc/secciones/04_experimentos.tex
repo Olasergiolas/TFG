@@ -10,8 +10,6 @@ resultados del experimento y las lecciones que puedan ser aprendidas de este.
 
 
 \section{Introducción al uso de Qiling: Prueba de concepto y fuzzing}
-- Diagrama del proceso de fuzzing con UnicornAFL
-
 \subsection{Introducción al experimento}
 En la sección de ''\nameref{estado_del_arte}'' decíamos que hay ciertos casos para los que no nos interesa fuzzear la ejecución de principio a fin 
 de un programa como cuando hacemos frente a un software complejo y costoso en tiempo de ejecutar o cuando para llevar a cabo la ejecución correctamente, 
@@ -119,7 +117,8 @@ ejecución.\bigskip
 
 Dado que estamos ante un binario simple, su emulación con Qiling no requiere de ninguna instrumentación adicional. Para emular el binario 
 hacemos uso de ''qltool'', la herramienta proporcionada por Qiling para emular rápidamente binarios sin aplicar instrumentación. Utilizamos la 
-siguiente orden y observamos como el binario compilado para ARM se ejecuta correctamente (figura \ref{fig:qltool})
+siguiente orden y observamos como el binario compilado para ARM se ejecuta correctamente, mostrando tras cinco segundos de espera los
+bytes de la cadena resultante en hexadecimal (figura \ref{fig:qltool}).
 
 \begin{lstlisting}[language=bash]
     $ qltool run --rootfs /usr/arm-linux-gnueabi -f bin/main_arm --args abc
@@ -132,19 +131,80 @@ siguiente orden y observamos como el binario compilado para ARM se ejecuta corre
     \label{fig:qltool}
 \end{figure}
 
-Ahora, respecto al fuzzing si que necesitaremos hacer uso de instrumentación dinámica para saltar esa pausa que imposibilita aplicar fuzzing 
-correctamente. Para esto, crearemos un script de Python en el que haremos uso de la API de Qiling para modificar el flujo de ejecución del 
-binario y usar como ''main'' del programa la función de cifrado de cadenas de texto.
+Ahora, para aplicar fuzzing consiguiendo buenos resultados necesitaremos hacer uso de instrumentación dinámica que nos permita saltar esa pausa que 
+simula una sección de código problemática. Para esto, crearemos un script de Python en el que haremos uso de la API de Qiling para modificar
+el flujo de ejecución del binario y usar como ''main'' del programa la función de cifrado de cadenas de texto. Como fuzzer a utilizar junto a Qiling, 
+haremos uso de AFL++ gracias a su fácil integración con Unicorn y Qiling a través de Unicornafl lo cual nos permitirá realizar fuzzing aprovechando la 
+información de cobertura de código proporcionada por Qiling. Además, ya que durante el fuzzing 
+no nos interesa que la cadena resultante se muestre por pantalla, también podemos finalizar la ejecución en la dirección donde se encuentre la instrucción
+de retorno de la función ''processArgs()'', reduciendo así el número de instrucciones a ejecutar. En la figura \ref{fig:QilingFuzzDiagram} observamos el
+flujo de ejecución que se desea llevar a cabo para fuzzear el código.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.26]{QilingFuzzDiagram.png}
+    \caption{Diagrama simplificado del proceso de fuzzing a implementar en Qiling.}
+    \label{fig:QilingFuzzDiagram}
+\end{figure}
+
+Para llevar a cabo el diagrama mostrado, empezamos estableciendo el hook y el callback que cambie el punto de entrada de ''main()'' por ''processArgs()''.
+La API de Qiling ofrece la función ''hook\_address(callback, trigger\_address)'' que toma como parámetros la función de Python a llamar a modo de callback 
+y la dirección de una instrucción dentro del binario para la cual llamar al callback previamente a su ejecución. La dirección elegida para fijar el callback 
+será la de la llamada a ''\_\_libc\_start\_main()'' como parte del proceso de setup realizado por el binario previamente a ejecutar su main. El callback
+simplemente usará la función ''ql.arch.regs.write(register\_id, value)'' de la API de registros de CPU de Qiling para fijar el valor del registro R0 a la dirección de la primera 
+instrucción de ''processArgs()''. Lo que se consigue modificando R0 es alterar el primer parámetro de la llamada a una función en ARM32. Aplicamos esta
+técnica en lugar de fijar directamente el contador de programa a la primera instrucción de ''processArgs()'' para conservar el código 
+de inicialización del entorno de ejecución y evitar así diversos problemas como errores de enlazado de librerías dinámicas.\bigskip
+
+Por último, integramos la ejecución de la función con AFL++ mediante un hook adicional que inicie la iteración de fuzzing y un callback que pueda ser 
+llamado por AFL++ para introducir el input mutado en memoria. En el snippet de código mostrado a continuación vemos también como el callback ha de 
+reservar y escribir en memoria los bytes del input ya que la función a fuzzear utiliza un string como parámetro.
+
+\begin{lstlisting}[language=python, caption=Integración de AFL++ con nuestro script de Qiling., captionpos=b,
+    frame=single, breaklines]
+    ...
+    def place_input_callback(_ql: Qiling, input: bytes, _):
+        address = _ql.mem.map_anywhere(len(input))
+        _ql.mem.write(address, input)
+        _ql.arch.regs.write("r0", address)
+
+    def start_afl(_ql: Qiling):
+        ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[ql.os.exit_point])
+
+    ql.hook_address(start_afl, TARGET_FUNC_ADDR)
+
+    ...
+\end{lstlisting}
+
+Para comenzar la sesión de fuzzing utilizamos como input inicial un fichero con la cadena ''BBBBBB'' y utilizamos la siguiente orden para 
+indicar a AFL++ que utilice nuestro script en modo Unicorn (figura \ref{fig:QilingPoCfuzz}). 
+
+\begin{lstlisting}[language=bash]
+    $ afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -U -- python3 src/fuzz.py @@
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.40]{QilingPoCfuzz.png}
+    \caption{Prueba de concepto de fuzzing con Qiling y AFL++.}
+    \label{fig:QilingPoCfuzz}
+\end{figure}
 
 \subsection{Resultados}
+Hemos podido comprobar que el fuzzing de nuestro código de prueba utilizando AFL++ en modo QEMU ha resultado ser un fracaso en términos de 
+eficiencia, como era de esperar. En cambio,
+al aplicar técnicas de instrumentación dinámica en Qiling hemos conseguido una mejora abismal en el número de ejecuciones por segundo durante el fuzzing, 
+pasando de menos de una ejecución por segundo en QEMU a alrededor de doscientas con Qiling. Pasando a la detección de la vulnerabilidad introducida, 
+cabe mencionar que hubo problemas para registrar correctamente los crashes producidos. Tras un poco de investigación, parece ser que Qiling en su versión developer
+(recomendada en la documentación oficial frente a la estable) ha sufrido una regresión en el tratamiento de crashes ya que Qiling estable es capaz de 
+reportar a AFL++ cuando nuestro código crashea debido a lectura fuera de límites introducida, mientras que en su versión developer el crash no es reportado.
+Tras crear una \href{https://github.com/qilingframework/qiling/issues/1163}{issue} en el repositorio oficial de Qiling\cite{qiling}, el bug ha sido reconocido y está siendo corregido actualmente.
+
+
 \subsection{Lecciones aprendidas}
-Aprendemos de qué forma podemos usar Qiling para posibilitarnos fuzzear cosas y que Qiling está wapo pero realmente donde aprenderemos lecciones importantes es
-en el siguiente experimento.
-
-
-
-
-
+A través de la realización de esta pequeña prueba de concepto ha quedado patente el potencial de Qiling cuando se trata de llevar a cabo tareas relacionadas
+con la instrumentación dinámica de binarios, como es el fuzzing. Teniendo en cuenta que este ejemplo se trata solo de una pequeña toma de contacto con la herramienta
+para introducirnos a su uso, donde realmente aprenderemos sobre casos prácticos reales de aplicación de Qiling es en el experimento a continuación.
 
 \section{Identificación de vulnerabilidad real a través de fuzzing: Netgear R7000}
 \subsection{Introducción al dispositivo}
