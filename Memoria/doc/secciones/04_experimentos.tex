@@ -5,10 +5,6 @@ poner en práctica los conocimientos obtenidos durante el proceso de investigaci
 objetivo a alcanzar y los posibles enfoques a aplicar para llegar a una solución, además de tratar los retos encontrados por el camino, los 
 resultados del experimento y las lecciones que puedan ser aprendidas de este.
 
-
-\section{Análisis de un proyecto Open Source: Fuzzing de un parser JSON}
-
-
 \section{Introducción al uso de Qiling: Prueba de concepto y fuzzing}
 \subsection{Introducción al experimento}
 En la sección de ''\nameref{estado_del_arte}'' decíamos que hay ciertos casos para los que no nos interesa fuzzear la ejecución de principio a fin 
@@ -194,7 +190,7 @@ indicar a AFL++ que utilice nuestro script en modo Unicorn (figura \ref{fig:Qili
 Hemos podido comprobar que el fuzzing de nuestro código de prueba utilizando AFL++ en modo QEMU ha resultado ser un fracaso en términos de 
 eficiencia, como era de esperar. En cambio,
 al aplicar técnicas de instrumentación dinámica en Qiling hemos conseguido una mejora abismal en el número de ejecuciones por segundo durante el fuzzing, 
-pasando de menos de una ejecución por segundo en QEMU a alrededor de doscientas con Qiling. Pasando a la detección de la vulnerabilidad introducida, 
+yendo de menos de una ejecución por segundo en QEMU a alrededor de doscientas con Qiling. Pasando a la detección de la vulnerabilidad introducida, 
 cabe mencionar que hubo problemas para registrar correctamente los crashes producidos. Tras un poco de investigación, parece ser que Qiling en su versión developer
 (recomendada en la documentación oficial frente a la estable) ha sufrido una regresión en el tratamiento de crashes ya que Qiling estable es capaz de 
 reportar a AFL++ cuando nuestro código crashea debido a lectura fuera de límites introducida, mientras que en su versión developer el crash no es reportado.
@@ -206,7 +202,7 @@ A través de la realización de esta pequeña prueba de concepto ha quedado pate
 con la instrumentación dinámica de binarios, como es el fuzzing. Teniendo en cuenta que este ejemplo se trata solo de una pequeña toma de contacto con la herramienta
 para introducirnos a su uso, donde realmente aprenderemos sobre casos prácticos reales de aplicación de Qiling es en el experimento a continuación.
 
-\section{Identificación de vulnerabilidad real a través de fuzzing: Netgear R7000}
+\section{Identificación de vulnerabilidad real a través de fuzzing: Netgear R7000}\label{r7000_section}
 \subsection{Introducción al dispositivo}
 El Netgear R7000, también conocido como Nighthawk AC1900 es un router WIFI ''inteligente'' lanzado al mercado originalmente en 2013 con una última
 revisión del hardware en 2018 que sigue en venta actualmente. Este producto de la gama de routers premium de Netgear recibe actualizaciones periódicas
@@ -1051,3 +1047,103 @@ Principalmente podemos destacar los siguientes puntos:
     casos para los que o se necesita extraer información del dispositivo original como variables de configuración o resulta difícil conseguir 
     emular a la perfección todos los periféricos requeridos.
 \end{itemize}
+
+\section{Análisis de un proyecto Open Source: Fuzzing de un parser JSON}
+\subsection{Introducción al dispositivo}
+La Wyzecam V3 (figura \ref{fig:wyzecam}) es una cámara de vigilancia WIFI de bajo coste fabricada por la empresa Wyze y lanzada al mercado
+en 2020. Esta cámara representa
+un claro ejemplo de dispositivo IoT, en el que toda la interacción con este se realiza a través de una app móvil además de disponer de integración con 
+tecnologías comúnmente encontradas en domótica como Google Assistant, Amazon Alexa e IFTT.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.25]{wyzecam.png}
+    \caption{Wyzecam V3.}
+    \label{fig:wyzecam}
+\end{figure}
+
+\subsection{Recopilación de información}
+Siguiendo el mismo procedimiento llevado a cabo en el apartado \ref{r7000_section} para obtener información más detallada sobre
+el dispositivo, accedemos al reporte del FCC para la Wyzecam V3\cite{wyzecamFCCid} y a través de su listado de fotografías internas
+identificamos su SoC. Rápidamente observamos que se trata de un ''Ingenic T31'' (figura \ref{fig:ingenict31}), un SoC orientado a procesamiento 
+de vídeo. Consultando las especificaciones técnicas proporcionadas por el fabricante de este chip llegamos a un diagrama de bloques 
+(figura \ref{fig:ingenicDiagram}) que nos indica que estamos ante un procesador modelo XBurst 1 con una arquitectura MIPS de 32 bits.
+Para responder a la pregunta de si posee una MMU accedemos al manual de programación oficial del chip\cite{xburstmanual} y descubrimos 
+que posee una MMU capaz de direccionar hasta 4GB de memoria.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.45]{ingenict31.png}
+    \caption{SoC Ingenic T31 dentro de la Wyzecam V3\cite{wyzecamFCCid}.}
+    \label{fig:ingenict31}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=1.1]{ingenicDiagram.png}
+    \caption{Diagrama de bloques del Ingenic T31\cite{ingenicproductpage}.}
+    \label{fig:ingenicDiagram}
+\end{figure}
+
+\subsection{Obtención del firmware}
+Para la obtención del firmware, accedemos al \href{https://support.wyze.com/hc/en-us/articles/360024852172-Release-Notes-Firmware}{portal de descargas}
+de Wyze y descargamos la versión 4.36.8.26. El resultado es un fichero
+con extensión ''.bin'' que procederemos a analizar con binwalk\cite{binwalk}. De la misma forma que anteriormente, empezamos consultando 
+la entropía del firmware. Al hacerlo, como podemos observar en la figura \ref{fig:wyzeEntropy}, se muestra una entropía alta con caídas 
+pronunciadas. Esto se debe a que el firmware está mayormente comprimido pero las cabeceras de sus secciones no lo están. Para comprobarlo,
+utilizamos binwalk para obtener un reporte de los elementos contenidos dentro del binario y efectivamente, observamos que las caídas de 
+la entropía dentro de los límites observables por binwalk se corresponden con la dirección de inicio de algunas de las secciones 
+(figura \ref{fig:binwalkWyze}). También podemos ver que se utiliza un sistema de archivos SquashFS y que estamos ante un firmware basado
+en Linux con un kernel versión 3.10.14 el cual fue publicado en 2013 y ha quedado ya considerablemente obsoleto. Por último, ya que se 
+han detectado correctamente los contnidos del firmware, procedemos a su extracción para dar paso a la siguiente sección.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.65]{wyzeEntropy.png}
+    \caption{Entropía del firmware de la Wyzecam V3 versión 4.36.8.26.}
+    \label{fig:wyzeEntropy}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.35]{binwalkWyze.png}
+    \caption{Output de Binwalk sobre el firmware de la Wyzecam V3 versión 4.36.8.26.}
+    \label{fig:binwalkWyze}
+\end{figure}
+
+\subsection{Introducción al experimento}
+El componente software del firmware elegido para llevar a cabo este experimento es la librería cJSON, un parser de JSON extremadamente 
+ligero escrito en ANSI C. Dado su bajo impacto en los recursos del sistema, esta librería es comúnmente usada en sistemas empotrados para
+ayudar con el tratamiento de información en formato JSON. La motivación principal detrás de elegir este software para aplicar fuzzing es
+la siguiente:
+\begin{itemize}
+    \item \textbf{Distribuida como librería}: El hecho de que cJSON esté incluido en el firmware a modo de librería y no como un ejecutable
+    como sucedía en el anterior experimento, implica la necesidad de tratar un nuevo aspecto del fuzzing, los harness.
+    \item \textbf{Superficie de ataque}: Los dispositivos IoT se caracterizan entre otras cosas por tratar con órdenes y datos provenientes del exterior
+    desde de otros dispositivos. Para comunicar de forma eficiente esta información se suelen utilizar formatos como JSON o XML y por tanto, se 
+    requerirán parsers que traten con esos inputs externos. Un fallo en el tratamiento de estos datos puede dar lugar a comportamientos erráticos o 
+    presentar una oportunidad para un atacante.
+    \item \textbf{Open Source}: Teniendo en cuenta que nos estamos introduciendo por primera vez en el campo del reversing y fuzzing en este tipo de 
+    dispositivos, tener acceso al código fuente original puede ayudarnos a analizar más fácilmente los crashes encontrados y sus causas. Además, 
+    aunque teniendo acceso al código fuente podríamos simplemente recompilarlo para x86-64, el centrarnos en trabajar con la librería extraída del firmware 
+    nos da la oportunidad de seguir expandiendo nuestros conocimientos sobre este campo pero con la ayuda adicional de poder consultar el código original.
+\end{itemize}
+
+Habiendo tratado con el experimento anterior el uso de Qiling en profundidad y dado que en esta ocasión tenemos control sobre el harness a utilizar, centraremos
+este experimento en el fuzzing de caja gris a través de AFL++ en modo QEMU. Además, comprobaremos si es posible obtener una mejora de resultados mediante 
+el uso de desinfectantes como QASAN en conjunción con el proceso de fuzzing. Por último, cabe destacar que en este caso no partimos buscando una vulnerabilidad
+ya conocida, sino que nuestro objetivo es intentar descubrir nuevas vulnerabilidades en el producto.
+
+\subsection{Realización del experimento}
+- Identificación de las funciones utilizadas
+- Exploración de la api ofrecida (ruta teniendo código y ruta sin)
+- Creación del harness
+- Emulación del harness
+- Fuzzing del harness
+- Uso de QASAN
+
+\subsection{Resultados}
+\subsection{Lecciones aprendidas}
+
+
+
