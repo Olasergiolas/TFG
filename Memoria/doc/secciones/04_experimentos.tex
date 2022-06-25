@@ -990,7 +990,6 @@ en aproximadamente 10 segundos haciendo uso del modo determinista y partiendo de
     \label{fig:UPNPQilingRadamsaCrash}
 \end{figure}
 
-
 \subsubsection{Fuzzing con QEMU full-system y Radamsa}
 Al igual que Radamsa ha sido capaz de identificar el crash emulando el binario con Qiling en el caso anterior, también se ha llegado al mismo 
 crash mediante el script desarrollado previamente que utiliza a Radamsa como fuzzer y va realizando peticiones SOAP a través de HTTP al 
@@ -1117,7 +1116,7 @@ ligero escrito en ANSI C. Dado su bajo impacto en los recursos del sistema, esta
 ayudar con el tratamiento de información en formato JSON. La motivación principal detrás de elegir este software para aplicar fuzzing es
 la siguiente:
 \begin{itemize}
-    \item \textbf{Distribuida como librería}: El hecho de que cJSON esté incluido en el firmware a modo de librería y no como un ejecutable
+    \item \textbf{Distribuida como librería}: El hecho de que cJSON esté incluido en el firmware a modo de librería enlazada dinámicamente y no como un ejecutable
     como sucedía en el anterior experimento, implica la necesidad de tratar un nuevo aspecto del fuzzing, los harness.
     \item \textbf{Superficie de ataque}: Los dispositivos IoT se caracterizan entre otras cosas por tratar con órdenes y datos provenientes del exterior
     desde de otros dispositivos. Para comunicar de forma eficiente esta información se suelen utilizar formatos como JSON o XML y por tanto, se 
@@ -1135,14 +1134,149 @@ el uso de desinfectantes como QASAN en conjunción con el proceso de fuzzing. Po
 ya conocida, sino que nuestro objetivo es intentar descubrir nuevas vulnerabilidades en el producto.
 
 \subsection{Realización del experimento}
-- Identificación de las funciones utilizadas
-- Exploración de la api ofrecida (ruta teniendo código y ruta sin)
-- Creación del harness
-- Emulación del harness
-- Fuzzing del harness
-- Uso de QASAN
+\subsubsection{Creación del harness}
+Como hemos comentado, debido a que estamos tratando con una librería enlazada dinámicamente por distintos componentes del firmware del dispositivo, necesitaremos
+implementar código a modo de harness que se encargue de obtener los inputs como parámetro de la línea de comandos y llame a ciertas funciones de la librería.
+Para decidir qué funciones de la librería poner a prueba, un buen criterio a seguir es tratar aquellas funciones que trabajen directamente 
+con input externo. Para conocer el listado de funciones de que exporta la librería hay dos posibles rutas a seguir. En primer lugar, si tenemos acceso al código
+fuente como es el caso, podemos simplemente incluir el header file de la librería en nuestro harness. En caso de no tenerlo, es posible listar las funciones
+exportadas por una librería compartida con herramientas como ''objdump'' o ''nm'' (figura \ref{fig:objdump}) y definir en nuestro harness las funciones usando 
+la keyword de C ''extern'' para indicar al
+compilador que la función será resuelta en tiempo de enlazado. Además, querremos que las funciones elegidas sean utilizadas por el firmware del dispositivo, lo
+cual podemos comprobar desde el sistema de archivos extraído del firmware haciendo uso de un ''grep'' recursivo para ver qué binarios importan la librería y usando la herramienta ''strings'' para listar
+las funciones de cJSON utilizadas por el binario (en caso de que el binario no haya sido strippeado) (figura \ref{fig:cJSONimports}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{objdump.png}
+    \caption{Listado de las funciones exportadas por la librería de cJSON.}
+    \label{fig:objdump}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.55]{cJSONimports.png}
+    \caption{Listado de las funciones de la librería siendo utilizadas para un binario.}
+    \label{fig:cJSONimports}
+\end{figure}
+
+Teniendo todo esto en cuenta, optamos por añadir al harness las siguientes funciones:
+\begin{itemize}
+    \item \textbf{cJSON\_Parse()}: Función principal encargada de parsear strings para generar una estructura de datos fácilmente manipulable que represente
+    información en formato JSON. 
+    \item \textbf{cJSON\_Minify()}: Función encargada de eliminar tokens innecesarios como saltos de línea de un input. 
+    \item \textbf{cJSON\_Print()}: Función que imprime por pantalla el JSON parseado.
+    \item \textbf{cJSON\_PrintBuffered()}: Alternativa a ''cJSON\_Print()'' que utiliza memoria dinámica.
+\end{itemize}
+
+Para la lectura de los inputs a partir de un fichero, implementamos la siguiente función que volcará el contenido del fichero en un array de bytes al que se le 
+añadirá un byte nulo al final para indicar el fin del input y evitar así problemas con el tratamiento de los bytes en caso de que AFL++ genere una string mutada 
+que no haya sido correctamente terminada.
+
+\begin{lstlisting}[language=C, caption=Lectura de inputs desde fichero en el harness., captionpos=b,
+    frame=single, breaklines, showstringspaces=false]
+    char* read_input(char* path){
+        FILE *f;
+        struct stat st;
+        char* content = NULL;
+        size_t read_elements = 0;
+    
+        f = fopen(path, "rb");
+        if (f == NULL)
+            exit(1);
+    
+        stat(path, &st);
+        if (st.st_size == 0)
+            exit(1);
+    
+        content = (char*)malloc(st.st_size + 1);
+        content[st.st_size] = '\0';                                                 // Avoid heap-buffer-overflow in strlen with non null terminated strings
+        if (fread(content, st.st_size, 1, f) != 1 || strlen(content) == 0)
+            exit(1);
+        
+        return content;
+    }
+\end{lstlisting}
+
+Por último, compilamos el harness para MIPS indicándole al compilador que haga uso de la librería compartida de cJSON. Usaremos la 
+siguiente orden con el compilador GCC de la toolchain de GNU para MIPS(el) y lo emulamos usando QEMU (figura \ref{fig:harnessRun}):
+
+\begin{lstlisting}[language=bash]
+    $ mipsel-linux-gnu-gcc -Iinclude src/harness.c -o bin/harness -lc -lcjson
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.6]{harnessRun.png}
+    \caption{Ejecución del harness en QEMU.}
+    \label{fig:harnessRun}
+\end{figure}
+
+\subsubsection{Fuzzing de cJSON}
+Comenzar la sesión de fuzzing con AFL++ en modo QEMU en sencillo, simplemente creamos un corpus de inputs 
+con una serie de ficheros con datos en formato JSON e iniciamos AFL++ en modo QEMU (figura \ref{fig:harnessFuzz})
+de la misma forma que se ha realizado en experimentos anteriores pero esta vez indicando con la variable de entorno
+''AFL\_INST\_LIBS'' que deseamos que se instrumente también la ejecución de código en las librerías compartidas.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{harnessFuzz.png}
+    \caption{Fuzzing del harness con AFL++ en modo QEMU.}
+    \label{fig:harnessFuzz}
+\end{figure}
+
+AFL++ permite activar el uso de desinfectantes en su modo QEMU utilizando la variable de entorno ''AFL\_USE\_QASAN''.
+QASAN hará uso de las capacidades de instrumentación dinámica internas de QEMU para monitorizar operaciones de memoria 
+en binarios que no han sido instrumentados estáticamente y forzar un crash en caso de detectar fallos de memoria. 
+Sorprendentemente, al fijar esta variable de entorno AFL++ no era capaz de iniciar la sesión de fuzzing indicando que 
+todas las ejecuciones realizadas con los inputs iniciales del corpus habían crasheado, como podemos 
+observar en la figura \ref{fig:aflQASAN}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.5]{aflQASAN.png}
+    \caption{Error mostrado por AFL++ al activar QASAN para fuzzear cJSON.}
+    \label{fig:aflQASAN}
+\end{figure}
 
 \subsection{Resultados}
+
+- Alto uso de disco
+- Falsos positivos (MIPS y por el harness)
+- Confusión por QASAN
+- Comparación de resultados con QASAN y AFL++
+
+Durante la realización de este experimento, fue necesario hacer frente a una serie de problemas encontrados:
+\begin{itemize}
+    \item \textbf{Alto uso de I/O}: Cuando se realizar fuzzing, un factor que hemos de tener en cuenta es la carga 
+    de I/O a la que el disco del host es sometido. En este experimento concretamente, el gran número de ejecuciones por 
+    segundo y por tanto de escrituras de nuevos ficheros con inputs JSON mutados daba lugar a unos 7MB/s de escritura en 
+    disco como podíamos comprobar con la herramienta ''iotop'' (figura \ref{fig:iotopBefore}). Mantener estas cifras de forma 
+    prolongada durante horas puede suponer un desgaste considerable para el disco pero esto puede ser paliado haciendo uso 
+    de un ramdisk. Un ramdisk no es más que asignar una sección de la RAM de un dispositivo para que actúe como si de un disco
+    de almacenamiento se tratara. Para usar un ramdisk con AFL++ solo deberemos de crear un directorio en ''/dev/shm'' y usar la 
+    variable de entorno ''AFL\_TMPDIR'' al iniciar la sesión de fuzzing para indicar que se desea utilizar el directorio creado para 
+    la gestión de ficheros temporales durante el fuzzing. Este directorio especial se trata de un sistema de archivos temporal (tmpfs)
+    encontrado en GNU/Linux que implementa el concepto de memoria compartida, utilizando RAM como medio de almacenamiento. Con este 
+    cambio se consigue una reducción de escrituras en disco destacable, estando ahora ligeramente por encima de los 10KB/s 
+    (figura \ref{fig:iotopAfter})
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.75]{iotopBefore.png}
+        \caption{Uso de disco durante una sesión de fuzzing de cJSON.}
+        \label{fig:iotopBefore}
+    \end{figure}
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.54]{iotopAfter.png}
+        \caption{Uso de disco tras utilizar un ramdisk durante una sesión de fuzzing de cJSON.}
+        \label{fig:iotopAfter}
+    \end{figure}
+    \item \textbf{Aparición de falsos positivos}: 
+    \item \textbf{Problemas para utilizar QASAN}
+
+\end{itemize}
+
 \subsection{Lecciones aprendidas}
 
 
