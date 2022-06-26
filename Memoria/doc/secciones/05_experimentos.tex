@@ -1348,11 +1348,24 @@ de cJSON.
         \label{fig:SkipMultilineSource}
     \end{figure}
 \end{itemize}
+
+Como conclusión, comentar que ambos fallos no son de gran relevancia y que no suponen una amenaza real para el software que haga uso de esta librería.
+Aún así, la metodología seguida para su análisis es igual de válida para vulnerabilidades más severas y gracias a su aplicación, se ha podido 
+llevar a cabo un valioso caso práctico de uso de fuzzing en combinación con desinfectantes para la identificación de vulnerabilidades en software orientado 
+a IoT.
 \subsection{Lecciones aprendidas}
-
-- Desinfectantes capaces de detectar al instante fallos que fuzzers tardan un poco más
-- No todos los fallos de memoria provocan un crash
-- Los harness son un punto adicional de fallo y hay que tener cuidado
-- Cuidado con el uso de disco.
-
-
+Siendo este el experimento que concluye el proyecto, finalizamos esta sección comentando las lecciones que hemos obtenido durante su realización. El haber
+tenido la oportunidad de utilizar desinfectantes y la necesidad de crear nuestro propio harness nos han servido para expandir nuestros conocimientos más allá
+de lo aprendido en el experimento anterior. Destacamos los siguientes puntos:
+\begin{itemize}
+    \item Aunque el usar desinfectantes durante el fuzzing puede hacer que se muestren fallos de memoria irrelevantes desde el punto de vista de la búsqueda 
+    de vulnerabilidades, se ha demostrado que no solo ayudan de forma efectiva a los fuzzers en su tarea reduciendo el tiempo que necesitan para llegar a un 
+    crash sino que también facilitan considerablemente el proceso de análisis de estos, proporcionando información muy valiosa al respecto como el mapa de 
+    shadow-bytes.
+    \item Hemos aprendido que no todos los fallos de memoria llevan a un crash completo de la aplicación. Algunos como los que hemos tratado en este experimento
+    resultan inofensivos mientras que otros simplemente provocan un comportamiento indefinido sin interrumpir su ejecución.
+    \item Es necesario prestar especial atención durante la creación de los harness ya que su utilización implica añadir código adicional que también puede
+    originar fallos, dificultando así la tarea de discernir qué fallos realmente son producidos por el código que deseamos poner a prueba.
+    \item Por último, se ha demostrado como en algunos casos es recomendable el uso de un ramdisk durante el fuzzing para evitar acelerar el desgaste del
+    disco del sistema en el que esté siendo realizado, aún más cuando se planea llevar a cabo sesiones de fuzzing de larga duración.
+\end{itemize}

@@ -109,15 +109,17 @@ Previamente a comenzar con el proyecto, estimaremos los costes de su realizació
 estimado, el sueldo medio de un ingeniero informático junior, los costes del hardware que necesitaremos para llevarlo a cabo o servicios necesarios
 que también necesitan ser sufragados como internet o la electricidad utilizada.\bigskip
 
-Respecto al coste de la mano de 
-obra, partimos de las 327 horas estimadas en el diagrama de Gantt (figura \ref{fig:gantt}) durante 3 meses, teniendo en cuenta también un 
-salario medio de ingeniero informático junior de 20.000 euros brutos al año. Para llevar a cabo el proyecto se planea dedicar una media de 
-4 horas diarias durante todos los días de la semana, lo cual supone un coste de $\sim13'7\euro$ la hora. Los costes de hardware se limitan al
+Empezamos partiendo del dato de las 327 horas estimadas en el diagrama de Gantt (figura \ref{fig:gantt}) durante 3 meses.
+De esta cifra descontamos el número de horas dedicado al aprendizaje personal e investigación llevados a cabo durante el primer mes del
+proyecto y utilizaremos el número de horas restantes para realizar una estimación de los costes de este proyecto. Respecto al coste de la 
+mano de obra, teniendo en cuenta un 
+salario medio de ingeniero informático junior de 20.000 euros brutos al año y que para llevar a cabo el proyecto se planea dedicar una media de 
+4 horas diarias durante todos los días de la semana, podemos calcular un coste de $\sim13'7\euro$ la hora. Los costes de hardware se limitan al
 ordenador sobre el que se va a realizar el proyecto, ya que al basar este en técnicas de emulación, no va a ser requerido hardware adicional 
-como podrían ser dispositivos IoT de domótica. El fuzzing IoT no requiere de ningún hardware específico para el ordenador con el que se va a 
-realizar, aunque si ayuda considerablemente el tener suficiente RAM e hilos de CPU para poder aumentar el número de ejecuciones por segundo 
+como podrían ser dispositivos IoT de domótica sobre los que aplicar el fuzzing. El fuzzing no requiere de ningún hardware específico para el 
+ordenador con el que se va a realizar, aunque si ayuda considerablemente el tener suficiente RAM e hilos de CPU para poder aumentar el número de ejecuciones por segundo 
 poniendo en marcha varias instancias en paralelo del fuzzer. Un ordenador de sobremesa como el que va a ser utilizado con 16GB de RAM, un 
-Ryzen 5 3600 y una GPU cualquiera (exclusivamente utilizada como salida de vídeo, ya que el Ryzen 5 3600 carece de GPU integrada) puede ser
+Ryzen 5 3600 de 6 núcleos y 12 hilos junto con una GPU cualquiera (exclusivamente utilizada como salida de vídeo, ya que el Ryzen 5 3600 carece de GPU integrada) puede ser
 conseguido por $\sim600\euro$.\bigskip
 
 Por último, el coste del servicio de internet en el lugar de trabajo actualmente es de $30\euro$ mensuales mientas 
@@ -130,11 +132,11 @@ con un precio de $0'23\euro$ el KW/h. Generamos la siguiente tabla con el presup
     \begin{tabular}{llll}
     \rowcolor[HTML]{C0C0C0} 
     \textbf{Descripción}           & \textbf{Uds.} & \textbf{Precio/Unidad ($\euro$)} & \textbf{Total ($\euro$)} \\
-    Mano de obra                   & 327           & 13'7                   & 4.479'9                \\
+    Mano de obra                   & 224           & 13'70                  & 3.068'80               \\
     Ordenador de sobremesa         & 1             & 600                    & 600                    \\
-    Servicio de internet (mensual) & 3             & 30                     & 90                     \\
-    Servicio de luz (mensual)      & 3             & 10'36                  & 31'08                  \\\hline
-                                   &               & \textbf{Total sumado:} & 5200'98$\euro$              
+    Servicio de internet (mensual) & 2             & 30                     & 60                     \\
+    Servicio de luz (mensual)      & 2             & 10'36                  & 20'72                  \\\hline
+                                   &               & \textbf{Total sumado:} & 3.749'52$\euro$              
     \end{tabular}
     \caption{Presupuesto para la realización del proyecto.}
     \label{table:presupuesto}
@@ -155,13 +157,13 @@ definidas que agrupan las issues según si se tratan de issues por comenzar, iss
 de arreglos en software de terceros o issues completadas. Podemos observar un ejemplo de issue creada durante la realización de los 
 experimentos planteados en la figura \ref{fig:issue}.
 \begin{figure}[H]
-    \centering{\includegraphics[scale=0.24]{kanban.png}}
+    \centering{\includegraphics[scale=0.2]{kanban.png}}
     \caption{Funcionalidad de tablero Kanban de Github.}
     \label{fig:kanban}
 \end{figure}
 
 \begin{figure}[H]
-    \centering{\includegraphics[scale=0.28]{issue.png}}
+    \centering{\includegraphics[scale=0.24]{issue.png}}
     \caption{Ejemplo de \href{https://github.com/Olasergiolas/TFG/issues/11}{issue} de reporte de bug en el repositorio del proyecto.}
     \label{fig:issue}
 \end{figure}
