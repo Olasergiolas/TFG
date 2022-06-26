@@ -1164,7 +1164,9 @@ Teniendo todo esto en cuenta, optamos por añadir al harness las siguientes func
 \begin{itemize}
     \item \textbf{cJSON\_Parse()}: Función principal encargada de parsear strings para generar una estructura de datos fácilmente manipulable que represente
     información en formato JSON. 
-    \item \textbf{cJSON\_Minify()}: Función encargada de eliminar tokens innecesarios como saltos de línea de un input. 
+    \item \textbf{cJSON\_Minify()}: Función encargada de eliminar tokens innecesarios como saltos de línea de un input. Esta función va iterando sobre los
+    caracteres de una string en busca de saltos de línea ($\backslash$n), retornos de carro ($\backslash$r) o tabulaciones ($\backslash$t), además de caracteres que 
+    puedan indicar la presencia de comentarios de una o múltiples líneas con el fin de eliminar todo esto y generar una string solo con los datos en formato JSON.
     \item \textbf{cJSON\_Print()}: Función que imprime por pantalla el JSON parseado.
     \item \textbf{cJSON\_PrintBuffered()}: Alternativa a ''cJSON\_Print()'' que utiliza memoria dinámica.
 \end{itemize}
@@ -1207,7 +1209,7 @@ siguiente orden con el compilador GCC de la toolchain de GNU para MIPS(el) y lo 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.6]{harnessRun.png}
+    \includegraphics[scale=0.55]{harnessRun.png}
     \caption{Ejecución del harness en QEMU.}
     \label{fig:harnessRun}
 \end{figure}
@@ -1240,20 +1242,14 @@ observar en la figura \ref{fig:aflQASAN}
 \end{figure}
 
 \subsection{Resultados}
-
-- Alto uso de disco
-- Falsos positivos (MIPS y por el harness)
-- Confusión por QASAN
-- Comparación de resultados con QASAN y AFL++
-
 Durante la realización de este experimento, fue necesario hacer frente a una serie de problemas encontrados:
 \begin{itemize}
-    \item \textbf{Alto uso de I/O}: Cuando se realizar fuzzing, un factor que hemos de tener en cuenta es la carga 
+    \item \textbf{Alto uso de I/O}: Cuando se realiza fuzzing, un factor que hemos de tener en cuenta es la carga 
     de I/O a la que el disco del host es sometido. En este experimento concretamente, el gran número de ejecuciones por 
     segundo y por tanto de escrituras de nuevos ficheros con inputs JSON mutados daba lugar a unos 7MB/s de escritura en 
     disco como podíamos comprobar con la herramienta ''iotop'' (figura \ref{fig:iotopBefore}). Mantener estas cifras de forma 
     prolongada durante horas puede suponer un desgaste considerable para el disco pero esto puede ser paliado haciendo uso 
-    de un ramdisk. Un ramdisk no es más que asignar una sección de la RAM de un dispositivo para que actúe como si de un disco
+    de un ramdisk. Un ramdisk consiste en asignar una sección de la RAM de un dispositivo para que actúe como si de un disco
     de almacenamiento se tratara. Para usar un ramdisk con AFL++ solo deberemos de crear un directorio en ''/dev/shm'' y usar la 
     variable de entorno ''AFL\_TMPDIR'' al iniciar la sesión de fuzzing para indicar que se desea utilizar el directorio creado para 
     la gestión de ficheros temporales durante el fuzzing. Este directorio especial se trata de un sistema de archivos temporal (tmpfs)
@@ -1272,12 +1268,91 @@ Durante la realización de este experimento, fue necesario hacer frente a una se
         \caption{Uso de disco tras utilizar un ramdisk durante una sesión de fuzzing de cJSON.}
         \label{fig:iotopAfter}
     \end{figure}
-    \item \textbf{Aparición de falsos positivos}: 
-    \item \textbf{Problemas para utilizar QASAN}
-
+    \item \textbf{Aparición de falsos positivos}: Otro de los retos comúnmente encontrados durante el fuzzing es el poder diferenciar 
+    cuando un crash detectado es un falso positivo y cuando se trata de un crash real, ya que pueden producirse falsos positivos por
+    multitud de razones como fallos en el harness, fallos en la emulación o falta de memoria RAM en el host entre otros. Para hacer frente a esto, 
+    un proceso de ''triaging'' es necesario. Este proceso consiste en un análisis más en profundidad de un crash detectado, en el que 
+    el problema se intenta reproducir y posteriormente analizar con la ayuda de depuradores de código. De esta forma se descubre no solo 
+    si el crash se produce realmente sino que también en qué punto del código lo está haciendo. Durante la sesión de fuzzing de nuestro 
+    harness, se identificó que los crashes que estaban siendo detectados eran falsos positivos producidos en la lógica de lectura de 
+    ficheros del harness y no en el código de la librería. Esto se debía a que en el harness se realizaban llamadas a funciones de 
+    tratamiento de strings como \textit{strlen}, las cuales dependen de que la cadena esté adecuadamente terminada con un byte nulo y 
+    como es de esperar, AFL++ realizaba ciertas mutaciones que carecían de dicho byte al final de la cadena JSON. Para solucionar esto,
+    añadiremos manualmente un byte nulo al final de la cadena mutada antes de pasarla a las funciones de cJSON. 
+    \item \textbf{Problemas para utilizar QASAN}: En un principio se desconocía el motivo por el cual AFL++ no era capaz de iniciar el 
+    fuzzing al activar QASAN. Sabiendo que todas las ejecuciones iniciales con los inputs del corpus han crasheado pero sin saber el 
+    por qué, iniciamos de nuevo un proceso de triaging en el que buscamos identificar qué origina los crashes. El primer paso es mostrar 
+    el output de cada una de las ejecuciones preliminares que realiza AFL++ con la variable de entorno ''AFL\_DEBUG\_CHILD''. Tras hacer esto,
+    observamos que en todas las ejecuciones QASAN detecta un heap-buffer-overflow en el código de la librería, concretamente en \textit{libcjson.so.1+0x8dc0}
+    (figura \ref{fig:QASANfuzz}). Esto nos indica que estamos ante un fallo de memoria producido en cJSON que aunque en circunstancias normales
+    no afecta al correcto funcionamiento del código, QASAN fuerza un crash al detectarlo. Trataremos más en profundidad este fallo a continuación.
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.42]{QASANfuzz.png}
+        \caption{Resultado de la emulación del harness con QASAN activado.}
+        \label{fig:QASANfuzz}
+    \end{figure}
 \end{itemize}
+Una vez fue solucionado el problema comentado con el harness, en la sesión de fuzzing empezaron a aparecer crashes que ahora sí que sucedían dentro 
+del código de la librería de cJSON. Tras tres horas de fuzzing sin QASAN, se procedió a intentar obtener más información sobre los crashes identificados con la 
+sorpresa de que al intentar ejecutar el harness con los inputs problemáticos el crash no era reproducible. Dado que es posible usar QASAN para 
+ejecuciones individuales fuera del fuzzing, lo utilizamos para obtener más información sobre los supuestos crashes y descubrimos que aunque el
+crash en sí no puede ser reproducido, QASAN es capaz de indicarnos que se han producido tres heap-buffer-overflows en distintas funciones del código 
+de cJSON.
+\begin{itemize}
+    \item \textbf{cJSON\_Minify()}: El reporte mostrado por QASAN (figura \ref{fig:cJSONminify}) nos indica que se ha producido un acceso 0 bytes más allá de los límites de un espacio
+    de memoria reservado en el heap de 29 bytes. Podemos apreciar fácilmente lo sucedido en el mapa de ''shadow-bytes'' mostrado por QASAN, donde se 
+    almacenan metadatos sobre el mapa de memoria principal. Teniendo en cuenta que cada byte mostrado en el mapa de shadow-bytes representa 8 bytes 
+    de memoria principal de la aplicación y que ''00'' indica que los 8 bytes son direccionables, observamos como hay reservados 29 bytes ($3\cdot8 + 5=29$)
+    siendo el acceso fuera de límites en el tramo entre los últimos ( 5 - 8 ] bytes, concretamente en el byte inmediato siguiente a los límites 
+    direccionables. Si consultamos en Ghidra el código ubicado en \textit{libcjson.so.1+0x8e8c} y lo comparamos con el código fuente original, descubrimos
+    que la operación se da al leer un byte más allá de la cadena de caracteres recibida como parámetro de la función (figura \ref{fig:cJSONminifySource}).
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.32]{cJSONminify.png}
+        \caption{Reporte del fallo de memoria en cJSON generado por QASAN.}
+        \label{fig:cJSONminify}
+    \end{figure}
 
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.45]{cJSONminifySource.png}
+        \caption{Segmento de código donde se produce el heap-buffer-overflow.}
+        \label{fig:cJSONminifySource}
+    \end{figure}
+
+    \item \textbf{skip\_multiline\_comment()}: Se trata de una función utilizada por \textit{cJSON\_Minify()} encargada de eliminar de una cadena de texto
+    los comentarios en formato ''/* \dots */''. Analizando el reporte de QASAN vemos en el mapa de shadow-bytes (figura \ref{fig:QASANskipMultiline}) que de nuevo,
+    se ha producido un acceso al byte inmediato siguiente de la sección de memoria reservada en \textit{libcjson.so.1+0x8b78}. Si navegamos en Ghidra a la 
+    dirección especificada vemos que la operación es un incremento de un puntero en una posición (figura \ref{fig:GhidraSkipMultiline}). Si consultamos el 
+    código original (figura \ref{fig:SkipMultilineSource}), confirmamos que simplemente se trata de un bucle for que se excede en una iteración al operar con una string.
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.55]{QASANskipMultiline.png}
+        \caption{Mapa de shadow-bytes reportado por QASAN para la función \textit{skip\_multiline\_comment()}.}
+        \label{fig:QASANskipMultiline}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.6]{GhidraSkipMultiline.png}
+        \caption{Decompilado de la función \textit{skip\_multiline\_comment()} en Ghidra.}
+        \label{fig:GhidraSkipMultiline}
+    \end{figure}
+
+    \begin{figure}[H]
+        \centering
+        \includegraphics[scale=0.46]{SkipMultilineSource.png}
+        \caption{Código fuente original de la función \textit{skip\_multiline\_comment()}.}
+        \label{fig:SkipMultilineSource}
+    \end{figure}
+\end{itemize}
 \subsection{Lecciones aprendidas}
 
+- Desinfectantes capaces de detectar al instante fallos que fuzzers tardan un poco más
+- No todos los fallos de memoria provocan un crash
+- Los harness son un punto adicional de fallo y hay que tener cuidado
+- Cuidado con el uso de disco.
 
 
