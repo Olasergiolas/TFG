@@ -271,7 +271,7 @@ que en su interior contiene un procesador dual core ARM Cortex A9 de 32 bits.
     \label{table:r7000}
 \end{table}
 
-Aunque Broadcom no proporciona una datasheet con las especificaciones del SoC, 
+Aunque Broadcom no proporciona una ficha técnica con las especificaciones del SoC, 
 si que podemos consultar información más detallada sobre el Cortex A9 a través de la documentación oficial de ARM\cite{cortexA9}. Gracias a esto podemos 
 conocer detalles como información sobre la Memory Management Unit (MMU) que utiliza la CPU. Esta información es de gran importancia ya que como explicaban
 Muench et al.\cite{Muench2018}, la presencia de una MMU en un dispositivo empotrado puede alterar drásticamente el comportamiento de este ante corrupciones de 
@@ -288,7 +288,7 @@ las imágenes del firmware. Podemos categorizarlos de la siguiente mantera:
     \item \textbf{Medio de distribución}: En el mejor de los casos, el fabricante provee un enlace de descarga del firmware a través de su portal de soporte oficial. Aunque
     este suele ser el caso para dispositivos como routers o cámaras IP, no es común en otros dispositivos aún más limitados como bombillas inteligentes o asistentes de voz.
     También hay fabricantes que con el objetivo de intentar evitar que usuarios puedan aplicar técnicas de ingeniería inversa sobre los paquetes de actualización, integran 
-    todo el proceso de actualización a través de una app móvil o desde el propio dispositivo. Ante esto, es posible hacer uso de iptables para redirigir el tráfico
+    todo el proceso de actualización a través de una aplicación móvil o desde el propio dispositivo. Ante esto, es posible hacer uso de iptables para redirigir el tráfico
     de la aplicación o del dispositivo e intentar interceptar las peticiones al servidor de descargas de firmware. Por último, existe la posibilidad de que el fabricante no 
     haya provisto al dispositivo de un mecanismo de actualización para el usuario. Como último recurso, sería posible desmontar el dispositivo e intentar extraer el firmware 
     a través de la interfaz JTAG o leyendo los contenidos de la memoria FLASH utilizando un programador flash (figura \ref{fig:programador}).
@@ -1051,7 +1051,7 @@ Principalmente podemos destacar los siguientes puntos:
 \subsection{Introducción al dispositivo}
 La Wyzecam V3 (figura \ref{fig:wyzecam}) es una cámara de vigilancia WIFI de bajo coste fabricada por la empresa Wyze y lanzada al mercado
 en 2020. Esta cámara representa
-un claro ejemplo de dispositivo IoT, en el que toda la interacción con este se realiza a través de una app móvil además de disponer de integración con 
+un claro ejemplo de dispositivo IoT, en el que toda la interacción con este se realiza a través de una aplicación móvil además de disponer de integración con 
 tecnologías comúnmente encontradas en domótica como Google Assistant, Amazon Alexa e IFTT.
 
 \begin{figure}[H]
@@ -1111,7 +1111,7 @@ han detectado correctamente los contnidos del firmware, procedemos a su extracci
 \end{figure}
 
 \subsection{Introducción al experimento}
-El componente software del firmware elegido para llevar a cabo este experimento es la librería cJSON, un parser de JSON extremadamente 
+El componente software del firmware elegido para llevar a cabo este experimento es la librería cJSON\cite{cJSON}, un parser de JSON extremadamente 
 ligero escrito en ANSI C. Dado su bajo impacto en los recursos del sistema, esta librería es comúnmente usada en sistemas empotrados para
 ayudar con el tratamiento de información en formato JSON. La motivación principal detrás de elegir este software para aplicar fuzzing es
 la siguiente:

@@ -52,11 +52,11 @@ inputs que enviar al dispositivo.
 Basados en este planteamiento surgen ''IoTFuzzer''\cite{Chen2018} y ''DIANE''\cite{Redini2021}, dos fuzzers IoT que delegan la creación de mensajes 
 a las aplicaciones para smartphone de fabricantes como TP-Link o Belkin diseñadas para gestionar remotamente los dispositivos IoT. 
 Se trata de un enfoque interesante a tener en cuenta ya que estas aplicaciones siempre van a generar mensajes que respeten el formato esperado
-por el dispositivo receptor. Partiendo de dicho concepto, estos fuzzers analizan automáticamente el código de las apps móviles en busca de secuencias de 
+por el dispositivo receptor. Partiendo de dicho concepto, estos fuzzers analizan automáticamente el código de las aplicaciones móvil en busca de secuencias de 
 métodos que envíen mensajes al dispositivo y mediante instrumentación dinámica, ejecutan estos métodos cambiando el valor de sus parámetros. La principal diferencia 
-entre ambos reside en el componente de la app móvil que toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz gráfica de la app
+entre ambos reside en el componente de la aplicación móvil que toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz gráfica de la app
 para introducir la información mutada de forma similar a como lo haría un usuario real. Dicho planteamiento presenta el inconveniente de que este tipo 
-de apps suelen filtrar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la app móvil.
+de aplicaciones suelen filtrar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la aplicación.
 ''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados después del filtrado de los inputs pero antes de
 que se realice el envío del mensaje al dispositivo IoT. Por desgracia, las técnicas de fuzzing de caja negra que trabajan sobre el dispositivo IoT
 directamente, ya sea haciéndole peticiones o ejecutando código en el hardware, suponen un gran sacrificio respecto a rendimiento ya que un hardware 
@@ -172,4 +172,3 @@ esta sección cabe destacar que, aunque el fuzzing de protocolos como Zigbee o M
 fuzzing IoT, su discusión queda fuera del alcance de este proyecto.
 
 \bigskip
-[TBD añadir tablas]
