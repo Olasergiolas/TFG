@@ -1,4 +1,4 @@
-\chapter{Estado del arte}
+z\chapter{Estado del arte}
 \label{estado_del_arte}
 Tradicionalmente, en el fuzzing orientado a dispositivos IoT no se aplicaban técnicas
 específicas para este tipo de dispositivos, es decir, el principal foco de atención era el fuzzing de sus portales web a través 
@@ -78,13 +78,13 @@ Es la dificultad para conseguir acceso al código fuente original lo que hace qu
 cuando se busca conseguir una mayor cobertura de código al fuzzear binarios de los cuales no se posee el código fuente. En este caso, los fuzzers obtienen 
 feedback sobre el estado interno de la ejecución del software sin necesidad de instrumentar el código fuente original. Conseguir información que pueda ser
 indicativa del estado interno de la ejecución de un software es el principal reto de los fuzzers de caja gris. 
-Llevar a cabo este análisis dinámico de software en arquitecturas más comúnmente orientadas a 
+Llevar a cabo un análisis dinámico de software de este tipo en arquitecturas más comúnmente orientadas a 
 propósito general como es x86-64 no es tarea difícil, pero hacerlo sobre plataformas altamente limitadas tanto en recursos como en funcionalidad
 puede suponer un reto. De esta forma surge la idea de añadir una capa de abstracción a través de emulación con soluciones basadas en QEMU\cite{qemu}
 que permitan realizar instrumentación dinámica de binarios. QEMU es un eficiente emulador de código abierto capaz de correr sistemas operativos y binarios
 diseñados para arquitecturas como ARM en otras completamente distintas como x86-64. Aunque en muchas ocasiones el concepto de emular software se asocia a
 una gran reducción de rendimiento, es necesario tener en cuenta que un ordenador de propósito general moderno como un portátil o un sobremesa es 
-considerablemente más potente que la mayoría de sistemas empotrados actuales, por lo que aún habiendo un mayor overhead en la ejecución el impacto de este es mitigado.
+considerablemente más potente que la mayoría de sistemas empotrados actuales, por lo que aún habiendo un mayor overhead en la ejecución el impacto de este queda mitigado.
 Los resultados de las investigaciones llevadas a cabo por Muench et al.\cite{Muench2018} muestran cómo emulando un sistema empotrado en su totalidad 
 se consigue una mejora de rendimiento sobre el hardware original.
 
@@ -95,19 +95,18 @@ Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplic
     operativo al completo traduciendo las llamadas al sistema de la aplicación emulada en llamadas al sistema del host. Es por ello que usar este modo 
     solo es factible si tanto el host como el huésped comparten sistema operativo. Herramientas como Qemuafl\cite{qemuafl}, un fork de QEMU modificado para añadir 
     integración con AFL++, consiguen un mayor número de 
-    ejecuciones por segundo en comparación con (II), pero por desgracia la ausencia de emulación de ciertos dispositivos hardware puede hacer imposible 
-    el correcto funcionamiento del binario que está siendo emulado. Zheng et al.\cite{Zheng2019} destacan que durante sus intentos de emular distintos 
-    servidores HTTP, DNS y SSH utilizados en routers comerciales, este modo de QEMU fue incapaz de emular correctamente ninguno de los binarios analizados.
-    \item \textbf{System-mode o Full system emulation}: Se trata de una técnica implementada por QEMU en la cual se crea una máquina virtual que emula un 
+    ejecuciones por segundo en comparación con (II), pero por desgracia el hecho de que ciertos dispositivos hardware no estén siendo emulados puede hacer imposible 
+    el correcto funcionamiento del binario. Zheng et al.\cite{Zheng2019} destacan que durante sus intentos de emular distintos 
+    servidores HTTP, DNS y SSH utilizados en routers comerciales, este modo de fuzzing de AFL++ basado en QEMU fue incapaz de emular correctamente ninguno de los binarios analizados.
+    \item \textbf{System-mode o Full system emulation}: Se trata de una técnica que también implementa QEMU en la cual se crea una máquina virtual que emula un 
     sistema al completo, esto incluye CPU, sistema operativo, periféricos hardware, etc. Gracias a esta técnica es posible emular software que puede resultar 
     problemático aplicando (I) debido a posibles dependencias duras sobre otros dispositivos. Un gran número de autores proponen el uso de esta técnica 
     para la ejecución de software IoT fuera de su hardware original debido a que permite alcanzar un balance entre rendimiento y estabilidad. La idea es que 
     una vez el sistema al completo es emulado, es posible fuzzear un binario del firmware aplicando el enfoque que se desee, ya sea de caja negra, gris o 
     blanca (si se dispone del código fuente). Ejemplo de uso de esta técnica de emulación es FIRMADYNE\cite{Chen2016}, un proyecto basado en QEMU\cite{qemu}
-    que facilita la ejecución e instrumentación de firmware IoT a través de emulación system-mode con un kernel modificado (soporte para ARM y MIPS), la 
-    implementación de un extractor de firmware y de una librería para simular una NVRAM real. Aunque se trata de un concepto interesante, diversos autores 
+    que facilita la ejecución e instrumentación de firmware IoT a través de emulación system-mode con un kernel modificado (soporte para ARM y MIPS), además de incluir un extractor de firmware y una librería para simular una NVRAM real. Aunque se trata de un concepto interesante, diversos autores 
     han demostrado como FIRMADYNE\cite{Chen2016} fracasa a la hora de emular correctamente la mayoría de firmware IoT basado en Linux, con tasas de éxito del
-    $\sim$16\%\cite{Kim2020} de 1124 imágenes firmware puestas a prueba pertenecientes a distintos routers y cámaras IP. Mingeun et al.\cite{Kim2020} 
+    $\sim$16\%\cite{Kim2020} sobre 1124 imágenes firmware puestas a prueba pertenecientes a distintos routers y cámaras IP. Mingeun et al.\cite{Kim2020} 
     sugiere que en la mayoría de los casos, los fracasos de FIRMADYNE\cite{Chen2016} vienen dados por pequeños fallos de configuración fácilmente 
     solucionables. Es por ello que proponen FirmAE, un emulador IoT que aplica heurísticas capaces de detectar fallos de configuración propios de cada
     firmware y solucionarlos. Gracias a esto se consigue una tasa de éxito del $\sim$80\% con respecto a las mismas imágenes firmware.
@@ -130,28 +129,27 @@ Cuando hablamos de técnicas de emulación de sistemas empotrados, podemos aplic
     \item \textbf{Augmented process emulation}: Técnica propuesta por Zheng et al.\cite{Zheng2019} que implementan en su fuzzer IoT Firm-AFL. El objetivo 
     principal es combinar la emulación de binarios mediante (I) durante la mayor parte del tiempo y poder de forma dinámica cambiar a (II) si se es 
     requerido durante la ejecución.
-    \item \textbf{Hardware in-the-loop}: Utilizan tanto emulación como el hardware real del dispositivo para la ejecución de código. Para implementar esta 
+    \item \textbf{Hardware-in-the-loop}: Utilizan tanto emulación como el hardware real del dispositivo para la ejecución de código. Para implementar esta 
     técnica se suele recurrir a algún tipo de proxy capaz de redirigir al dispositivo ciertas operaciones que tengan una fuerte dependencia en el hardware
-    original mientras que la mayoría de instrucciones máquina se ejecutan en la CPU de otro sistema. Aplicar un enfoque hardware in-the-loop aporta a costa 
+    original mientras que la mayoría de instrucciones máquina se ejecutan en la CPU de otro sistema. Aplicar un enfoque hardware-in-the-loop aporta a costa 
     de reducir escalabilidad las ventajas de usar emulación manteniendo a su vez la alta estabilidad que proporciona usar el hardware original.
     AVATAR\cite{Zaddach2014} aplica esta técnica delegando las operaciones de I/O al hardware original mientras que el resto de la ejecución se lleva a 
     cabo mediante emulación. uAFL\cite{uAFL} lleva a cabo la ejecución del software en el hardware original y extrae del dispositivo a través de JTAG
-    información de cobertura de código gracias al hardware de debugging llamado ''ARM ETM'' incluido en ciertos procesadores ARM. Dado que 
+    información de cobertura de código gracias al hardware de depuración llamado ''ARM ETM'' incluido en ciertos procesadores ARM. Dado que 
     esta información necesita de una gran cantidad de recursos para ser procesada, se extrae del dispositivo para su procesamiento y se utiliza el resultado
     para guiar el proceso de fuzzing.
 \end{enumerate}
 
-\subsection{Sanitizers}
-Más allá de la emulación, también existen otras tecnologías comúnmente utilizadas en conjunción con el fuzzing IoT como son los ''Sanitizers'' y los
-''Rewriters''. En primer lugar, los sanitizers como ASAN\cite{Serebryany2012} o MSAN\cite{Stepanov2015} son herramientas que buscan ayudar con la detección de errores de memoria mediante la instrumentación 
+\subsection{Desinfectantes}
+Más allá de la emulación, también existen otras tecnologías comúnmente utilizadas en conjunción con el fuzzing IoT como son los desinfectantes y los
+''Rewriters''. En primer lugar, los desinfectantes como ASAN\cite{Serebryany2012} o MSAN\cite{Stepanov2015} son herramientas que buscan ayudar con la detección de errores de memoria mediante la instrumentación 
 de código. Al instrumentar el código de una aplicación, son capaces de añadir mecanismos de protección al stack y al heap además de reemplazar funciones
 de acceso a memoria como \textit{malloc} o \textit{free} con versiones propias capaces de reportar información detallada sobre la operación que está siendo 
-realizada. El objetivo principal de todo esto es poder monitorizar operaciones ilegales de memoria como buffer overflows,
-use-after-free, leaks de memoria, etc. introduciendo el mínimo overhead posible, además de poder hacer que el binario crashee en cuanto se detecte una de estas
+realizada. El objetivo principal de todo esto es poder monitorizar operaciones ilegales de memoria como desbordamientos de buffers, uso de memoria después de haber sido liberada (use-after-free), fugas de memoria, etc. introduciendo el mínimo overhead posible, además de poder hacer que el binario crashee en cuanto se detecte una de estas
 operaciones ilegales, incluso si durante un uso normal del software esto no hubiera sido suficiente como para afectar de forma visible su funcionamiento. 
-Como es lógico, facilitar a los fuzzers la detección de errores de memoria resulta toda una ventaja pero debido a que la mayoría de sanitizers basan su
+Como es lógico, facilitar a los fuzzers la detección de errores de memoria resulta toda una ventaja pero debido a que la mayoría de desinfectantes basan su
 funcionamiento en la instrumentación de código fuente, su aplicación no resulta viable para el tipo de fuzzing que nos atañe. Con el objetivo de poder 
-llevar esta tecnología a binarios de código cerrado surge QASAN\cite{Fioraldi2020}, un sanitizer que consigue imitar la funcionalidad de ASAN\cite{Serebryany2012} 
+llevar esta tecnología a binarios de código cerrado surge QASAN\cite{Fioraldi2020}, un desinfectante que consigue imitar la funcionalidad de ASAN\cite{Serebryany2012} 
 mediante las capacidades de instrumentación dinámica que proporciona QEMU. Como podremos observar en \nameref{experimentos}, aplicar esta herramienta 
 junto a un fuzzer puede revelar bugs de memoria que no hubieran sido descubiertos aplicando fuzzing clásico. \bigskip
 
@@ -161,13 +159,13 @@ el binario. Aunque existen multitud de rewriters siendo desarrollados actualment
 ZAFL\cite{Nagy2021}, es necesario tener en cuenta que se tratan de herramientas muy recientes que en muchos casos pueden introducir fallos en los binarios
 instrumentados además de carecer en ocasiones de funcionalidades básicas como soporte para binarios de diferentes arquitecturas más allá de x86-64. 
 Dichos problemas hacen que la tecnología no esté todavía preparada para su uso a gran escala y menos aún en el contexto de los sistemas empotrados y el 
-internet de las cosas.
+internet de las cosas, donde la gran mayoría de dispositivos están basados en otras arquitecturas.
 \bigskip
 
 Una vez ya tratados los distintos enfoques, técnicas y herramientas presentes en el panorama actual del fuzzing IoT se nos abre un gran abanico de 
 posibilidades a la hora de poner en práctica y combinar el uso de algunas de estas técnicas y herramientas para intentar conseguir detectar el mayor 
-número de vulnerabilidades en software orientado a sistemas empotrados e IoT. Esto será llevado a más adelante en el proyecto, donde pondremos a prueba 
-conceptos como el fuzzing de caja negra, emulación system-mode y user-mode, instrumentación dinámica o los sanitizers. Por último, antes de finalizar con
+número de vulnerabilidades en software orientado a sistemas empotrados e IoT. Esto será llevado a cabo más adelante en el proyecto, donde pondremos a prueba 
+conceptos como el fuzzing de caja negra, emulación system-mode y user-mode, instrumentación dinámica o los desinfectantes. Por último, antes de finalizar con
 esta sección cabe destacar que, aunque el fuzzing de protocolos como Zigbee o MQTT es también una rama de investigación de gran interés en el campo del
 fuzzing IoT, su discusión queda fuera del alcance de este proyecto.
 

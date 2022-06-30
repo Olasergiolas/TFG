@@ -3,17 +3,17 @@
 
 \section{Metodología utilizada}
 \label{metodologia}
-Aunque la realización de este proyecto no requiera en gran medida desarrollar un producto software complejo, 
-se ha seguido la metodología de ''Issue Driven Development'' (IDD) con el fin de agilizar y organizar el trabajo.
-Se trata de una metodología similar al ''Feature Driven Development'' en la cual la idea principal es que el 
-estado actual y futuro del proyecto siempre quede reflejado en el sistema de tracking de issues que esté siendo utilizado.
+Aunque la realización de este proyecto no requiere en gran medida desarrollar un producto software complejo, 
+se ha seguido la metodología de \textit{Desarrollo basado en Issues} (IDD por sus siglas en inglés) con el fin de agilizar y organizar el trabajo.
+Se trata de una metodología similar al \textit{Desarrollo basado en Funcionalidades} en la cual la idea principal es que el 
+estado actual y futuro del proyecto siempre quede reflejado en el sistema de seguimiento de issues que esté siendo utilizado.
 Esta metodología presenta una serie de ventajas realmente interesantes como la modularidad que proporciona el que 
 los commits y las ramas del repositorio sean autocontenidas, la granularidad gracias a que los commits y las ramas 
 se centran exclusivamente en una issue actual a cerrar, además de poder llevar registro de las discusiones entre 
 colaboradores con respecto a los commits realizados sobre una issue. Aunque esto último no nos atañe debido a que 
 el proyecto está siendo desarrollado de forma individual, se trata de un punto positivo muy a tener en cuenta en 
 entornos de desarrollo colaborativo.
-El ''Issue Driven Development'' también se caracteriza por seguir una filosofía DRY o ''Don't Repeat Yourself'' en 
+El IDD también se caracteriza por seguir una filosofía DRY o ''Don't Repeat Yourself'' en 
 la que se incentiva el mantener de forma estructurada, unificada y centralizada toda la información de documentación 
 con respecto a cambios y planificación de desarrollo con el fin de evitar problemas de redundancia y posible
 fragmentación.\bigskip
@@ -21,22 +21,22 @@ fragmentación.\bigskip
 El procedimiento a seguir en esta metodología empieza por la elección de un sistema de gestión de issues. Esto se 
 comentará más adelante en ''\nameref{seguimiento}''. A continuación, antes de proceder con la realización de 
 cualquier tarea, se crea una issue correspondiente en la quede reflejado qué se desea hacer y cómo se tiene planteado 
-hacerlo. Es buena práctica agrupar issues por milestones para tener una visión más general de estas. Una vez 
-creadas la issue en cuestión y su milestone correspondiente, se creará una rama en la que se llevará a cabo todo el 
+hacerlo. Es buena práctica agrupar issues por hitos para tener una visión más general de estas. Una vez 
+creadas la issue en cuestión y su hito correspondiente, se creará una rama en la que se llevará a cabo todo el 
 desarrollo relacionado con la issue. Los commits que se realicen a las ramas deberán de contener una descripción 
 explicativa de los cambios e incluir en el título una categoría y una referencia a la issue que se está tratando de solucionar. Con 
 esto se busca que los commits tengan enlazada toda la información necesaria para comprender fácilmente los cambios 
 realizados, es decir, que sean autocontenidos. Por último, una vez que la issue haya sido cerrada a través de un 
-commit, se realizará un merge de la rama temática con la rama master.
+commit, se incorporarán los cambios de la rama temática con la rama principal.
 
 Como es posible imaginar, esta metodología puede llegar a ser un tanto abrumadora en proyectos pequeños o poco 
 complejos en los cuales puede darse el caso de que el esfuerzo de documentar en el sistema de gestión de issues 
 todas las tareas a realizar puede llevar más tiempo que la realización de las tareas en sí.
 
-Por último, comentar que para la toma de apuntes sobre la información de interés encontrada y y el desarrollo de 
-las pruebas de concepto, se ha utilizado la herramienta de Joplin, una herramienta Open Source multiplataforma que 
+Por último, comentar que para la toma de apuntes sobre la información de interés encontrada y el desarrollo de 
+las pruebas de concepto se ha utilizado Joplin, una herramienta Open Source multiplataforma que 
 permite tomar notas de manera organizada en formato Markdown. El poder mantener un formato constante para los apuntes
-realizados en Joplin y los readme del repositorio de trabajo ha sido de gran ayuda para facilitar su traslado.
+realizados en Joplin y los README del repositorio de trabajo ha sido de gran ayuda para facilitar su traslado.
 
 \section{Temporización}
 Para realizar una estimación de la duración en días y el número de horas que pueden ocupar las distintas tareas que se desea 
@@ -61,24 +61,24 @@ experimentos'' y ''Documentación''. El siguiente listado de tareas queda reflej
         en el campo del internet de las cosas para tener un punto de partida.
         \item \textbf{Fuzzing en general}: Es necesario investigar el funcionamiento de la técnica del fuzzing en sí antes de proceder a 
         investigar sobre su aplicación al campo del IoT.
-        \item \textbf{Fuzzing targets}: Se investigarán distintos dispositivos y sus respectivos firmware para descubrir software de interés
+        \item \textbf{Fuzzing targets}: Se investigarán distintos dispositivos y sus respectivos firmwares para descubrir software de interés
         sobre el que realizar fuzzing.
         \item \textbf{Proyectos de fuzzing IoT}: Como parte del estudio del estado del arte se investigarán las distintas técnicas y herramientas 
         aplicadas actualmente en la materia.
         \item \textbf{Emulación IoT}: Dado que la emulación es un factor clave en el fuzzing IoT será necesario profundizar en las distintas 
         técnicas disponibles.
-        \item \textbf{Sanitizers}: Los sanitizers suelen ser utilizados para agilizar el proceso de fuzzing. Debemos de investigar cómo difiere
+        \item \textbf{Sanitizers}: Los sanitizers o desinfectantes suelen ser utilizados para agilizar el proceso de fuzzing. Debemos de investigar cómo difiere
         su aplicación en dispositivos IoT con respecto a su uso tradicional.
-        \item \textbf{Rewriters}: Investigar sobre esta nueva técnica que puede aumentar la eficiencia del fuzzing.
+        \item \textbf{Rewriters}: Investigar sobre esta nueva técnica que puede aumentar la eficiencia del fuzzing instrumentando estáticamente binarios.
         \item \textbf{Extracción de firmware}: Como paso previo a aplicar fuzzing es necesario obtener los binarios que serán objeto de
-        experimento. Investigaremos la metodología actual para extraer binarios a partir de una imagen firmware.
+        experimento. Investigaremos la metodología actual para extraer firmware y los binarios incluidos en este.
     \end{itemize}
     \item \textbf{Desarrollo de herramientas complementarias}:
     \begin{itemize}
         \item \textbf{Contenedor Docker}: Querremos desarrollar un contenedor Docker que evite tener que lidiar con la gran cantidad de dependencias 
         y paquetes software necesarios para realizar fuzzing orientado a IoT.
         \item \textbf{Integración continua}: Se automatizará la publicación del contenedor Docker a DockerHub mediante CI/CD.
-        \item \textbf{Taskfiles}: Aplicando también los conocimientos obtenidos en la asignatura de IV, se hará uso de un taskrunner que 
+        \item \textbf{Taskfiles}: Aplicando también los conocimientos obtenidos en la asignatura de IV, se hará uso de un gestor de tareas que 
         facilitará la reproducibilidad de los experimentos. 
     \end{itemize}
     \item \textbf{Realización de experimentos}:
@@ -89,7 +89,7 @@ experimentos'' y ''Documentación''. El siguiente listado de tareas queda reflej
         sobre un proyecto de código abierto orientado a sistemas empotrados.
         \item \textbf{Fuzzing firmware real}: Se llevará a cabo un experimento donde se aplique fuzzing a binarios extraídos del firmware de un 
         dispositivo real con el fin de identificar una vulnerabilidad conocida. 
-        \item \textbf{Aplicación de sanitizers}: Para finalizar, se hará uso de sanitizers en los distintos ejemplos para analizar de qué forma 
+        \item \textbf{Aplicación de sanitizers}: Para finalizar, se hará uso de desinfectantes para analizar de qué forma 
         su uso influye en el proceso de fuzzing.
     \end{itemize}
     \item \textbf{documentación}:
@@ -104,8 +104,7 @@ experimentos'' y ''Documentación''. El siguiente listado de tareas queda reflej
 \end{itemize}
 
 \section{Estimación de costes}
-Previamente a comenzar con el proyecto, estimaremos los costes de su realización en base a diferentes factores como el número de horas necesarias
-estimado, el sueldo medio de un ingeniero informático junior, los costes del hardware que necesitaremos para llevarlo a cabo o servicios necesarios
+Previamente a comenzar con el proyecto, estimaremos los costes de su realización en base a diferentes factores como el número estimado de horas necesarias, el sueldo medio de un ingeniero informático junior, los costes del hardware que necesitaremos para llevarlo a cabo o servicios necesarios
 que también necesitan ser sufragados como internet o la electricidad utilizada.\bigskip
 
 Empezamos partiendo del dato de las 327 horas estimadas en el diagrama de Gantt (figura \ref{fig:gantt}) durante 3 meses.
@@ -114,7 +113,7 @@ proyecto y utilizaremos el número de horas restantes para realizar una estimaci
 mano de obra, teniendo en cuenta un 
 salario medio de ingeniero informático junior de 20.000 euros brutos al año y que para llevar a cabo el proyecto se planea dedicar una media de 
 4 horas diarias durante todos los días de la semana, podemos calcular un coste de $\sim13'7\euro$ la hora. Los costes de hardware se limitan al
-ordenador sobre el que se va a realizar el proyecto, ya que al basar este en técnicas de emulación, no va a ser requerido hardware adicional 
+ordenador sobre el que se va a realizar el proyecto, ya que al basar este en técnicas de emulación no va a ser requerido hardware adicional 
 como podrían ser dispositivos IoT de domótica sobre los que aplicar el fuzzing. El fuzzing no requiere de ningún hardware específico para el 
 ordenador con el que se va a realizar, aunque si ayuda considerablemente el tener suficiente RAM e hilos de CPU para poder aumentar el número de ejecuciones por segundo 
 poniendo en marcha varias instancias en paralelo del fuzzer. Un ordenador de sobremesa como el que va a ser utilizado con 16GB de RAM, un 
@@ -143,7 +142,7 @@ con un precio de $0'23\euro$ el KW/h. Generamos la siguiente tabla con el presup
 
 Como conclusión comentar que no se trata de un presupuesto competitivo para la labor de investigación que se desea realizar. Estas tareas suelen 
 ser llevadas a cabo por expertos de la materia a tratar mientras que este proyecto fue planteado para ser llevado a cabo sin experiencia previa al 
-respecto con el objetivo de aprender en el proceso. Es por ello que tareas que podrían ser realizadas en menor tiempo por un investigador ya formado al respecto previamente, se prolongan 
+respecto con el objetivo de aprender en el proceso. Es por ello que tareas que podrían ser realizadas en menor tiempo por un investigador ya formado previamente, se prolongan 
 en el tiempo con el consecuente incremento en costes.
 
 \section{Seguimiento del desarrollo}
