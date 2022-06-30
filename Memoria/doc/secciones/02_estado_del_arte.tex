@@ -2,37 +2,37 @@
 \label{estado_del_arte}
 Tradicionalmente, en el fuzzing orientado a dispositivos IoT no se aplicaban técnicas
 específicas para este tipo de dispositivos, es decir, el principal foco de atención era el fuzzing de sus portales web a través 
-de peticiones HTTP(s) con un enfoque de caja negra. Este tipo de fuzzers conocidos como ''dumb fuzzers'' tratan al software como si de una caja negra se tratase, 
-algo que recibe un input y genera un output. El código que se haya alcanzado para procesar el input internamente no es tenido en
-cuenta a la hora de modificar los inputs.
+de peticiones HTTP(s) con un enfoque de caja negra. Este tipo de fuzzers conocidos como fuzzers no inteligentes tratan al software como si de una caja negra se tratase, 
+algo que recibe unos datos de entrada y genera otros de salida. El código que se haya alcanzado para procesar la entrada internamente no es tenido en
+cuenta a la hora de modificar los inputs durante el fuzzing.
 
 \section{Fuzzing de caja negra}
 El fuzzing de caja negra sigue un flujo de ejecución simple el cual comienza con la mutación de un input válido.
 A partir de ahí este input mutado es utilizado como parámetro del objetivo a fuzzear, si el 
 objetivo (web, binario, etc.) produce un timeout o crashea, el fuzzer registra el input que 
-ha provocado este comportamiento y si el funcionamiento del objetivo es correcto se vuelve a empezar. Dentro del ''dumb fuzzing'' hay también
-distintos niveles de complejidad, algunos autores proponen ''random fuzzers'' extremadamente básicos que 
+ha provocado este comportamiento y si el funcionamiento del objetivo es correcto se vuelve a empezar. Dentro de los fuzzers no inteligentes hay también
+distintos niveles de complejidad, algunos autores proponen fuzzers extremadamente básicos que 
 llevan a cabo sus modificaciones al input de forma completamente aleatoria. Este enfoque utilizado por 
 herramientas como\cite{zzuf}, sigue la filosofía que dio lugar originalmente al fuzzing en 
 los años 80 de la mano de Barton Miller\cite{Miller1990}.
 
-\subsection{Mutation-based fuzzing}
+\subsection{Fuzzing basado en mutaciones}
 Modificar inputs de forma completamente aleatoria
-ejemplifica el principal problema del ''dumb fuzzing'', la baja cobertura de código. Para conseguir encontrar 
+ejemplifica el principal problema de los fuzzers no inteligentes, la baja cobertura de código. Para conseguir encontrar 
 el mayor número de fallos en el código, es necesario intentar ejecutar el mayor porcentaje de este posible. Cuando 
 un input está siendo generado de manera completamente aleatoria, es bastante probable que este no cumpla con
 ciertas comprobaciones que el software realice sobre el formato del input. Esto provoca que el input sea descartado 
 de manera prematura en la ejecución del software y no se lleguen a alcanzar secciones críticas de código.
 Con el objetivo de intentar hacer frente a este reto, otros autores proponen lo que es 
-conocido como ''Mutation-based fuzzing'' donde aún aplicando todavía un enfoque de caja negra, se infiere
+conocido como el fuzzing basado en mutaciones, donde aún aplicando todavía un enfoque de caja negra se infiere
 información sobre el input original a partir de la identificación de patrones y se aplican heurísticas para generar
 nuevas mutaciones. Estas heurísticas pueden ser modificables en tiempo de ejecución como hace Radamsa\cite{radamsa}
 para conseguir una mayor tasa de éxito de cara a encontrar vulnerabilidades. Esta herramienta ejemplifica que incluso 
 un buen fuzzer de caja negra es capaz de identificar de forma efectiva vulnerabilidades críticas en productos comerciales 
 ampliamente utilizados como Cisco AnyConnect, Mozilla Firefox o Google Chrome.
 
-\subsection{Generation-based fuzzing}
-Otros fuzzers de caja negra categorizados como ''Generation-based fuzzers''\cite{Felderer2016} van un paso más allá y utilizan diccionarios o modelos para solo 
+\subsection{Fuzzing basado en modelos}
+Otros fuzzers de caja negra categorizados como fuzzers basados en modelos o ''Generation-based fuzzers''\cite{Felderer2016} en inglés, van un paso más allá y utilizan diccionarios o modelos para solo 
 mutar determinados campos de forma que se maximice el número de inputs ''válidos'' generados para la aplicación a fuzzear. Esto es de 
 especial interés en aplicaciones que utilizan datos con una sintaxis especialmente compleja o verbose como HTML, SQL o XML.
 Boofuzz\cite{boofuzz} es un fuzzer que implementa esta idea permitiendo al usuario crear scripts de Python en los que 
@@ -45,7 +45,7 @@ la respuesta obtenida al realizar una petición, aunque esto suponga depender de
 Gracias a esta información adicional, ''Snipuzz'' es capaz de identificar qué rol cumple cada 
 byte de un input y cómo afecta su modificación a la respuesta del dispositivo.
 
-\subsection{App-based fuzzing}
+\subsection{Fuzzing basado en aplicaciones móviles}
 Otros autores hacen frente al reto de conseguir generar inputs 
 válidos a través de la invocación de métodos internos de las propias aplicaciones móviles de los fabricantes de dispositivos IoT para generar los 
 inputs que enviar al dispositivo.
@@ -54,9 +54,9 @@ a las aplicaciones para smartphone de fabricantes como TP-Link o Belkin diseñad
 Se trata de un enfoque interesante a tener en cuenta ya que estas aplicaciones siempre van a generar mensajes que respeten el formato esperado
 por el dispositivo receptor. Partiendo de dicho concepto, estos fuzzers analizan automáticamente el código de las aplicaciones móvil en busca de secuencias de 
 métodos que envíen mensajes al dispositivo y mediante instrumentación dinámica, ejecutan estos métodos cambiando el valor de sus parámetros. La principal diferencia 
-entre ambos reside en el componente de la aplicación móvil que toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz gráfica de la app
+entre ambos reside en qué componente de la aplicación móvil toman como punto de partida. ''IoTFuzzer'' parte de los métodos a nivel de interfaz de usuario de la app
 para introducir la información mutada de forma similar a como lo haría un usuario real. Dicho planteamiento presenta el inconveniente de que este tipo 
-de aplicaciones suelen filtrar el input del usuario, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la aplicación.
+de aplicaciones suelen filtrar los datos introducidos, por lo que una gran cantidad de las mutaciones serán descartadas sin siquiera salir de la aplicación.
 ''DIANE'' soluciona el problema tomando como punto de partida aquellos métodos que sean ejecutados después del filtrado de los inputs pero antes de
 que se realice el envío del mensaje al dispositivo IoT. Por desgracia, las técnicas de fuzzing de caja negra que trabajan sobre el dispositivo IoT
 directamente, ya sea haciéndole peticiones o ejecutando código en el hardware, suponen un gran sacrificio respecto a rendimiento ya que un hardware 
