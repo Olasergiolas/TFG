@@ -8,12 +8,11 @@ resultados del experimento y las lecciones que puedan ser aprendidas de este.
 \section{Introducción al uso de Qiling: Prueba de concepto y fuzzing}
 \subsection{Introducción al experimento}
 En la sección de ''\nameref{estado_del_arte}'' decíamos que hay ciertos casos para los que no nos interesa fuzzear la ejecución de principio a fin 
-de un programa como cuando hacemos frente a un software complejo y costoso en tiempo de ejecutar o cuando para llevar a cabo la ejecución correctamente, 
-necesitamos de algún periférico o recurso del que carecemos. Además, la idea de poder dirigir el proceso de fuzzing a los componentes del código que más nos 
+de un programa como por ejemplo cuando hacemos frente a un software complejo y costoso en tiempo de ejecutar o cuando para ejecutarlo correctamente necesitamos de algún periférico o recurso del que carecemos. Además, la idea de poder dirigir el proceso de fuzzing a los componentes del código que más nos 
 resulten de interés es de alto valor para nuestro principal objetivo al realizar fuzzing, la identificación de vulnerabilidades en el menor tiempo posible.
-Emuladores como Unicorn o Qiling hacen esto posible gracias a sus capacidades no solo de emulación sino también de instrumentación dinámica de binarios.
+Frameworks de emulación como Unicorn o Qiling hacen esto posible gracias a sus capacidades no solo de emulación sino también de instrumentación dinámica de binarios.
 Cuando se decidió poner en práctica esta técnica para realizar fuzzing orientado a IoT, fue necesario elegir entre estos dos proyectos, los cuales 
-representan a día de hoy los principales emuladores multi-arquitectura centrados en la instrumentación dinámica a través de una API. Qiling terminó siendo 
+representan a día de hoy los principales framework multi-arquitectura centrados en la instrumentación dinámica a través de una API. Qiling terminó siendo 
 la elección final gracias a que además de presentar toda la funcionalidad de Unicorn, nos permite trabajar a más alto nivel con conceptos como librerías dinámicas,
 llamadas al sistema o I/O, al contrario que este otro que solo trabaja a nivel de instrucciones de CPU.\bigskip
 
@@ -27,9 +26,8 @@ buscará simular comportamientos problemáticos comúnmente encontrados al reali
 Más concretamente, este pseudo-experimento a modo de prueba de concepto consistirá en la emulación y fuzzing mediante Qiling de un simple binario que tras 
 dormir durante cinco segundos lleva a cabo el ''cifrado'' de un string introducido como parámetro mediante la aplicación de una operación
 XOR a cada byte del string. El tiempo durante el cual el binario duerme intenta simbolizar escenarios problemáticos reales de cara al fuzzing 
-como la ejecución de rutinas de código previas a la funcionalidad que queremos evaluar o el bloqueo temporal de la ejecución por ocasionados 
-por no conseguir emular el entorno de ejecución real a la perfección. En cualquiera de los casos, este tipo de comportamientos dificulta
-enormemente el obtener buenos resultados a través del fuzzing como probaremos a continuación.
+como la ejecución de rutinas de código previas a la funcionalidad que queremos evaluar o los posibles bloqueos parciales o completos de la ejecución ocasionados por no conseguir emular el entorno de ejecución real a la perfección. En cualquiera de los casos, este tipo de comportamientos dificulta
+enormemente el obtener buenos resultados a través del fuzzing tradicional como probaremos a continuación.
 
 \subsection{Realización del experimento}
 Empezaremos por desarrollar un simple código en C que implemente la funcionalidad descrita anteriormente. Además, añadiremos a la función de 
@@ -98,8 +96,8 @@ básico con la cadena ''BBBBBB'' e iniciamos el fuzzing (figura \ref{fig:QEMUPoC
     \label{fig:QEMUPoC}
 \end{figure}
 
-Observando la información reportada por AFL++, salta a la vista que el número de ejecuciones por segundo es demasiado bajo como para encontrar 
-el crash que buscamos en un tiempo razonable.
+Observando la información reportada por AFL++, salta a la vista que el número de ejecuciones por segundo (0.2/s en la figura \ref{fig:QEMUPoC}) es demasiado bajo como para encontrar 
+el crash que buscamos en un tiempo razonable y por ello, procedemos a hacer uso de técnicas alternativos como Qiling para solucionarlo.
 
 \subsubsection{Uso de Qiling}
 Qiling proporciona funciones en su API para llevar a cabo diversas tareas de instrumentación dinámica que pueden sernos de utilidad en este 
@@ -108,12 +106,12 @@ que pueden acelerar el fuzzing guardando el estado de la CPU y la memoria en un 
 con memoria y registros, que nos permiten trabajar con los parámetros de las funciones, los hooks, que hacen posible ejecutar código propio al 
 llegar a una dirección del programa específica o el mapeo de dispositivos del host al entorno de emulación. De todo esto haremos uso de las 
 operaciones con memoria y registros de la CPU para modificar el punto de entrada del binario a la función de cifrado que deseamos fuzzear e 
-instrumentarla, además de usar hooks para automáticamente realizar dichas operaciones al alcanzar puntos estratégicos del binario durante la 
+instrumentar, además de usar hooks para automáticamente realizar dichas operaciones al alcanzar puntos estratégicos del binario durante la 
 ejecución.\bigskip
 
 Dado que estamos ante un binario simple, su emulación con Qiling no requiere de ninguna instrumentación adicional. Para emular el binario 
 hacemos uso de ''qltool'', la herramienta proporcionada por Qiling para emular rápidamente binarios sin aplicar instrumentación. Utilizamos la 
-siguiente orden y observamos como el binario compilado para ARM se ejecuta correctamente, mostrando tras cinco segundos de espera los
+siguiente orden usando ''abc'' como cadena de entrada y observamos como el binario compilado para ARM se ejecuta correctamente, mostrando tras cinco segundos de espera los
 bytes de la cadena resultante en hexadecimal (figura \ref{fig:qltool}).
 
 \begin{lstlisting}[language=bash]
@@ -172,7 +170,7 @@ reservar y escribir en memoria los bytes del input ya que la función a fuzzear 
     ...
 \end{lstlisting}
 
-Para comenzar la sesión de fuzzing utilizamos como input inicial un fichero con la cadena ''BBBBBB'' y utilizamos la siguiente orden para 
+Para comenzar la sesión de fuzzing utilizamos como input inicial un fichero con la cadena ''BBBBBB'' y la siguiente orden para 
 indicar a AFL++ que utilice nuestro script en modo Unicorn (figura \ref{fig:QilingPoCfuzz}). 
 
 \begin{lstlisting}[language=bash]
@@ -188,10 +186,10 @@ indicar a AFL++ que utilice nuestro script en modo Unicorn (figura \ref{fig:Qili
 
 \subsection{Resultados}
 Hemos podido comprobar que el fuzzing de nuestro código de prueba utilizando AFL++ en modo QEMU ha resultado ser un fracaso en términos de 
-eficiencia, como era de esperar. En cambio,
+eficiencia como era de esperar. En cambio,
 al aplicar técnicas de instrumentación dinámica en Qiling hemos conseguido una mejora abismal en el número de ejecuciones por segundo durante el fuzzing, 
 yendo de menos de una ejecución por segundo en QEMU a alrededor de doscientas con Qiling. Pasando a la detección de la vulnerabilidad introducida, 
-cabe mencionar que hubo problemas para registrar correctamente los crashes producidos. Tras un poco de investigación, parece ser que Qiling en su versión developer
+cabe mencionar que hubo problemas para registrar correctamente los crashes producidos en Qiling. Tras un poco de investigación, parece ser que Qiling en su versión developer
 (recomendada en la documentación oficial frente a la estable) ha sufrido una regresión en el tratamiento de crashes ya que Qiling estable es capaz de 
 reportar a AFL++ cuando nuestro código crashea debido a lectura fuera de límites introducida, mientras que en su versión developer el crash no es reportado.
 Tras crear una \href{https://github.com/qilingframework/qiling/issues/1163}{issue} en el repositorio oficial de Qiling\cite{qiling}, el bug ha sido reconocido y está siendo corregido actualmente.
@@ -217,8 +215,8 @@ a día de hoy por parte del fabricante y se trata de una elección muy popular e
 \subsection{Recopilación de información}
 Consultando sus especificaciones técnicas principales 
 encontramos que posee una CPU de 1GHz dual-core, 256MB de RAM, 128MB de memoria flash y soporte para dual-band de 2'4GHz a 600Mbps y de 5GHz a 
-1300Mbps. Aunque estas especificaciones son interesantes a la hora de conocer las restricciones cómo de restringido en rendimiento es el dispositivo,
-no son lo suficientemente detalladas como para aportarnos información clave que necesitamos conocer para aplicar emulación sobre el dispositivo.
+1300Mbps. Aunque estas especificaciones son interesantes a la hora de conocer cómo de restringido respecto a rendimiento está el dispositivo,
+no son lo suficientemente detalladas como para aportarnos información clave que necesitamos conocer para aplicar emulación sobre este.
 Principalmente, desconocemos el procesador que está siendo utilizado y su arquitectura, ya que el fabricante no proporciona dicha información.
 Cuando nos encontramos en esta situación en la que deseamos conocer información más detallada sobre los componentes internos de un dispositivo, 
 una posible solución es consultar su informe de aceptación para la certificación del FCC\cite{fcc} en la base de datos \hyperlink{fccid.io}{fccid.io}.
@@ -277,7 +275,7 @@ conocer detalles como información sobre la Memory Management Unit (MMU) que uti
 Muench et al.\cite{Muench2018}, la presencia de una MMU en un dispositivo empotrado puede alterar drásticamente el comportamiento de este ante corrupciones de 
 memoria. Un dispositivo sin MMU puede no detectar fallas de memoria y seguir funcionando en un estado indefinido mientras que uno con MMU provoca un 
 crash al detectar corrupción de memoria o la realización de alguna operación ilegal. Según la documentación oficial de la CPU, el procesador utiliza la MMU 
-diseñada para la arquitectura Armv7, por lo que podemos deducir que un crash que encontremos aplicando fuzzing al firmware mediante emulación, podrá ser replicado
+diseñada para la arquitectura Armv7, por lo que podemos deducir que un crash que encontremos aplicando fuzzing al firmware mediante emulación, podría ser replicado
 en el dispositivo real.
 
 \subsection{Obtención del firmware}
@@ -291,11 +289,11 @@ las imágenes del firmware. Podemos categorizarlos de la siguiente mantera:
     todo el proceso de actualización a través de una aplicación móvil o desde el propio dispositivo. Ante esto, es posible hacer uso de iptables para redirigir el tráfico
     de la aplicación o del dispositivo e intentar interceptar las peticiones al servidor de descargas de firmware. Por último, existe la posibilidad de que el fabricante no 
     haya provisto al dispositivo de un mecanismo de actualización para el usuario. Como último recurso, sería posible desmontar el dispositivo e intentar extraer el firmware 
-    a través de la interfaz JTAG o leyendo los contenidos de la memoria FLASH utilizando un programador flash (figura \ref{fig:programador}).
+    a través de la interfaz JTAG o leyendo los contenidos de la memoria EEPROM utilizando un programador (figura \ref{fig:programador}).
     \begin{figure}[H]
         \centering
         \includegraphics[scale=0.35]{programmer.png}
-        \caption{Programador flash CH341A genérico.}
+        \caption{Programador EEPROM CH341A genérico.}
         \label{fig:programador}
     \end{figure}
     \item \textbf{Cifrado}: Además de no proporcionar un portal de descargas de firmware, los fabricantes también suelen cifrar sus paquetes de actualización para dificultar las 
@@ -317,14 +315,14 @@ en todo el binario es un fuerte indicativo de que o su contenido ha sido comprim
   $ binwalk -E R7000-V1.0.11.128_10.2.112.chk
 \end{lstlisting}
 
-Como podemos apreciar en la figura \ref{fig:binwalkEnt}, Binwalk reporta una entropía considerablemente alta para el firmware. Para comprobar si estamos
+Como podemos apreciar en la figura \ref{fig:binwalkEnt}, Binwalk reporta una entropía alta para el firmware. Para comprobar si estamos
 ante un firmware cifrado intentamos identificar el contenido de este usando la flag ''-e'' en lugar de ''-E''. Al hacerlo, Binwalk es capaz de detectar 
 la presencia de tres elementos dentro del firmware (figura \ref{fig:binwalkExt}), una primera entrada de nombre ''TRX firmware header'' que contiene metadatos
-del firmware en formato TRX como un magic number, la versión de TRX en uso, longitud del header o un checksum CRC32 para comprobar la integridad del paquete. Sería posible
+del firmware en formato TRX como un magic number, la versión de TRX en uso, longitud de la cabecera o un checksum CRC32 para comprobar la integridad del paquete. Sería posible
 identificar qué información corresponde a cada campo consultando la documentación sobre el formato TRX\cite{firmwareFormat}, pero Binwalk ya hace este trabajo 
-por nosotros. Además, Binwalk nos indica que estamos ante un firmware basado en Linux. A continuación identifica una sección de datos comprimidos usando LZMA, un algoritmo
+por nosotros. Además, Binwalk también nos indica que estamos ante un firmware basado en Linux. A continuación identifica una sección de datos comprimidos usando LZMA, un algoritmo
 de compresión sin pérdidas usado en este caso para comprimir la imagen del Kernel de Linux. Por último, tenemos el sistema de archivos del dispositivo en formato
-SquashFS, un sistema de archivos de solo lectura utilizado en dispositivos de recursos limitados por sus capacidades de compresión. Tras la extracción, tenemos acceso 
+SquashFS, un sistema de archivos de solo lectura con capacidades de compresión utilizado en dispositivos de recursos limitados. Tras la extracción, tenemos acceso 
 al contenido del sistema de archivos (figura \ref{fig:R7000squashfs}), el cual sigue la jerarquía de directorios aplicada en sistemas Linux. Además, la imagen 
 del Kernel también es extraída y haciendo uso de la herramienta ''strings'' de las Coreutils de GNU podemos comprobar que la versión del kernel en uso es la 
 2.6.36.4\ref{fig:R7000kernel}, modificada con soporte adicional para SoCs de Broadcom basados en ARM.
@@ -361,18 +359,17 @@ Una vez extraído el firmware, podemos proceder a elegir un binario que nos resu
 comentado en la siguiente sección.
 
 \subsection{Introducción al experimento}
-El experimento que va a ser realizado está basado en los descubrimientos realizados por el equipo de la firma de ciberseguridad GRIMM, publicados el
+El experimento que va a ser llevado a cabo está basado en los descubrimientos realizados por el equipo de la firma de ciberseguridad GRIMM, publicados el
 22 de Abril del 2022\cite{r7000GRIMM}. En su publicación, hacen una introducción a una vulnerabilidad detectada en el demonio UPNP presente en 
 el firmware del Netgear R7000 en su versión 1.0.11.128 y anteriores. La vulnerabilidad se da concretamente en la funcionalidad de actualización de 
-firmware proporcionada por el demonio UPNP y consiste en un buffer-overflow que puede llevar a ejecución remota de código (RCE) por parte de un usuario 
+firmware proporcionada por el demonio UPNP y consiste en un desbordamiento de buffer que puede llevar a ejecución remota de código (RCE) por parte de un usuario 
 identificado en el sistema al proporcionar un paquete de actualización de firmware malicioso. Esto es posible debido a que la rutina de actualización 
 al comprobar los headers confía en los tamaños especificados en la cabecera TRX\cite{firmwareFormat} incluida en el paquete de firmware proporcionado 
 por el usuario para realizar operaciones de memoria. A continuación, aplican emulación full-system en QEMU con el objetivo de recrear la vulnerabilidad 
 y diseñar una prueba de concepto de un firmware malicioso.\bigskip
 
 El equipo de GRIMM identificó la vulnerabilidad mediante análisis estático de código haciendo uso de herramientas de decompilación como Ghidra\cite{Ghidra}.
-Aunque se trata de una técnica efectiva, requiere de un experto cualificado que revise manualmente el código línea a línea y de un veredicto potencialmente 
-incompleto. Como es lógico, no se trata de un procedimiento que pueda ser fácilmente escalable. Además, hacen uso de emulación full-system cuando solo desean
+Aunque se trata de una técnica efectiva, requiere de un experto cualificado que revise manualmente el código línea a línea pudiendo potencialmente dar un veredicto incompleto. Como es lógico, no se trata de un procedimiento que pueda ser fácilmente escalable. Además, hacen uso de emulación full-system cuando solo desean
 poner a prueba una pequeña parte de la funcionalidad del demonio. Es por ello que proponemos mejoras para ambos de los aspectos mencionados mediante la aplicación 
 de técnicas alternativas. En primer lugar, respecto al procedimiento de identificación de la vulnerabilidad podemos hacer uso de fuzzing, realizando de forma 
 automática mutaciones a la imagen del firmware que se proporciona a la rutina de actualización. Al aplicar fuzzing, posibilitamos la detección de vulnerabilidades 
@@ -404,7 +401,7 @@ siendo referenciado por dos funciones distintas (figura \ref{fig:R7000string}).
 Ambas funciones implementan aparentemente la misma lógica de parsing de la cabecera del firmware con la única diferencia de que ''FUN\_0003322c''
 (figura \ref{fig:R7000decompilado}) contiene hardcodeado el modelo del dispositivo para compararlo con un valor incluido en el firmware. 
 Ya que esta función parece destinada a nuestro modelo específico, será la función que usemos como objeto de pruebas más adelante y la apodaremos 
-''check\_upd\_header''. Realizando un breve 
+''check\_upd\_header'' a partir de ahora. Realizando un breve 
 análisis del código decompilado, podemos observar que en la línea 17 se comprueba una cadena mágica para verificar que se trata de un firmware, 
 en las líneas 29 y 30 se realizan operaciones con memoria que analizaremos más adelante y de la línea 34 a la 44 se llevan a cabo comprobaciones de que 
 el firmware corresponda con el modelo de dispositivo en el que va a ser instalado.
@@ -412,7 +409,7 @@ el firmware corresponda con el modelo de dispositivo en el que va a ser instalad
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.45]{r7000decompilado.png}
-    \caption{Función del UPNP decompilada por Ghidra.}
+    \caption{Rutina de actualización de firmware decompilada por Ghidra.}
     \label{fig:R7000decompilado}
 \end{figure}
 
@@ -428,7 +425,7 @@ Para emular la función deseada con Qiling, aplicaremos la misma técnica que ha
 de dos hooks para alterar el flujo de ejecución del código. El primer hook se ejecutará al llegar al punto de entrada del ejecutable y reemplazará el primer 
 parámetro de la función (registro R0 según la convención de llamada a funciones en ARM32) con la dirección en hexadecimal de check\_upd\_header() para convertir 
 la función en el main del programa. El segundo hook también sigue el mismo funcionamiento, dado que check\_upd\_header() solo recibe como parámetro un array 
-de bytes representando el header del firmware, solo será necesario alocar manualmente los bytes que el script de Qiling haya leído de un archivo que se le 
+de bytes representando la cabecera del firmware, solo será necesario alocar manualmente los bytes que el script de Qiling haya leído de un archivo que se le 
 pase por línea de comandos. En la figura \ref{fig:R7000flowchart} podemos observar el flujo de ejecución aplicando instrumentación 
 dinámica con el script de Qiling.
 
@@ -440,7 +437,7 @@ dinámica con el script de Qiling.
 \end{figure}
 
 Para crear el script, empezamos consultando en Ghidra la dirección de la función ''\_\_uClibc\_main()'' y las direcciones de 
-inicio y fin de la función target check\_upd\_header() para crear variables reconocibles en el script. Para el caso de este 
+inicio y fin de la función objetivo check\_upd\_header() para crear variables reconocibles en el script. Para el caso de este 
 binario, las direcciones son las siguientes:
 
 \begin{lstlisting}[language=python, caption=Declaración de constantes: Direcciones de interés en funciones., captionpos=b,
@@ -453,7 +450,7 @@ binario, las direcciones son las siguientes:
 Gracias a la intuitiva API de Qiling, establecer los hooks es tan fácil como asociar la dirección de una instrucción del binario
 con una función del script. También cabe mencionar que definiremos como ''rootfs'' la ruta al sistema de archivos extraído del
 firmware previamente para que el enlazado dinámico de librerías se produzca correctamente. Definimos de la siguiente manera los
-hooks y sus funciones asociadas.
+hooks y sus callbacks asociados.
 
 \begin{lstlisting}[language=python, caption=Definición de hooks del script de emulación para Qiling., captionpos=b,
     frame=single, breaklines]
@@ -482,9 +479,9 @@ hooks y sus funciones asociadas.
     ...
 \end{lstlisting}
 
-Tras crear el script, necesitaremos un sample de cabeceras de firmware para pasarle a este como parámetro y comprobar así
+Tras crear el script, necesitaremos un ejemplo real de cabecera de firmware para pasarle a este como parámetro y comprobar así
 su funcionamiento. Para ello, simularemos un caso de actualización de firmware real, es decir, descargaremos el paquete de 
-firmware correspondiente a la siguiente versión (1.0.11.128 -> 1.0.11.134) y extraeremos los mil primeros bytes de este ya que 
+firmware correspondiente a la siguiente versión (1.0.11.128 -> 1.0.11.134) y extraeremos los 1024 primeros bytes de este ya que 
 solo estamos interesados en las cabeceras y el inicio del fichero. DD permite hacer esto con la siguiente orden:
 
 \begin{lstlisting}[language=bash, breaklines]
@@ -493,7 +490,7 @@ solo estamos interesados en las cabeceras y el inicio del fichero. DD permite ha
 
 Mirando el volcado en hexadecimal del fichero resultante (figura \ref{fig:R7000header}), saltan rápidamente a la vista dos de
 los campos descritos anteriormente al tratar la estructura de una cabecera TRX y las comprobaciones previas que realiza 
-check\_upd\_header(), el magic number al inicio del fichero con el valor ''*\#\$\textasciicircum'' y el modelo de dispositivo
+check\_upd\_header(), el magic number o cadena mágica al inicio del fichero con el valor ''*\#\$\textasciicircum'' y el modelo de dispositivo
 para el que va destinada la actualización ''U12H270T00\_NETGEARHDR0''.
 
 \begin{figure}[H]
@@ -531,16 +528,14 @@ emulando el binario al completo.
 
 \paragraph{QEMU}
 Para emular el firmware aplicando emulación full-system en QEMU, es más viable obtener una máquina virtual Linux para sistemas ARM 
-y ejecutar en esta los binarios de interés antes que intentar emular el firmware del dispositivo al completo, debido a la 
-necesidad de tener que manualmente solucionar los problemas de compatibilidad por aspectos como diferencias en la configuración 
-de interfaces red o la ausencia de dispositivos necesarios durante el arranque del sistema como hemos comprobado anteriormente 
+y ejecutar en esta los binarios de interés antes que intentar emular el firmware del dispositivo al completo. Esto se debe a que para emular el firmware al completo sería necesario solucionar manualmente los problemas de compatibilidad que surgieran como diferencias en la configuración 
+de interfaces red o la ausencia de dispositivos necesarios durante el arranque del sistema y su uso como hemos comprobado anteriormente 
 con el NVRAM. Por ello, partimos de una VM de Debian ARM (debian-10-openstack-arm64.qcow2) obtenida de su  
 \href{https://cdimage.debian.org/cdimage/cloud/OpenStack/}{web oficial} en la que introduciremos el sistema de archivos extraído del firmware 
 del R7000 para ejecutar el binario del servicio UPNP teniendo todas las librerías necesarias para ello. Utilizamos la siguiente 
 orden para arrancar la máquina virtual descargada con 2GB de RAM, todos los núcleos disponibles de la CPU, almacenamiento, un 
 adaptador de red y los puertos 22 y 5000 redirigidos a la máquina host. El puerto 22 será de utilidad para acceder 
-mediante SSH a la máquina virtual mientras que el 5000 lo necesitamos para poder realizar peticiones por el protocolo SOAP, que 
-es el protocolo utilizado por el demonio UPNP para interactuar con este desde el exterior.
+mediante SSH a la máquina virtual mientras que el 5000 lo necesitamos para poder realizar peticiones por el protocolo SOAP, el protocolo utilizado por el demonio UPNP para interactuar con este desde el exterior.
 
 \begin{lstlisting}[language=bash, breaklines]
     $ qemu-system-aarch64 -m 2G -M virt -cpu max -bios /usr/share/qemu-efi-aarch64/QEMU_EFI.fd -drive if=none,file=debian-10-openstack-arm64.qcow2,id=hd0 -device virtio-blk-device,drive=hd0 -device e1000,netdev=net0 -netdev user,id=net0,hostfwd=tcp:127.0.0.1:1234-:22,hostfwd=tcp::5000-:5000 -nographic
@@ -549,7 +544,7 @@ es el protocolo utilizado por el demonio UPNP para interactuar con este desde el
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.55]{r7000QemuBoot.png}
-    \caption{Grub menu from the ARM QEMU VM.}
+    \caption{Menú de la GRUB en la VM Debian ARM para QEMU.}
     \label{fig:R7000QemuBoot}
 \end{figure}
 
@@ -575,8 +570,8 @@ para que cuando esto suceda, cambiar el contador de programa a la dirección del
 la comprobación. Para solucionar la falta de una NVRAM, reemplazaremos la librería dinámica ''libnvram.so'' del sistema de archivos 
 por una versión modificada de nvram-faker\cite{nvram} que GRIMM proporciona con las variables extraídas de un dispositivo original.
 Esto resulta un claro punto negativo para la aplicación de emulación full-system, ya que para conseguir que nuestro binario de 
-interés se ejecute correctamente, hubiéramos necesitado disponer del dispositivo original e identificar todas las variables 
-consultadas en la NVRAM y sus valores esperados a través de ingeniería inversa y análisis estático de código no resulta viable. 
+interés se ejecute correctamente, hubiéramos necesitado disponer del dispositivo original para identificar todas las variables 
+consultadas en la NVRAM y volcar sus valores esperados a través de ingeniería inversa.
 
 \begin{figure}[H]
     \centering
@@ -586,9 +581,9 @@ consultadas en la NVRAM y sus valores esperados a través de ingeniería inversa
 \end{figure}
 
 Tras solucionar los problemas encontrados, hacemos uso de la siguiente orden para automatizar el proceso de hacer \textit{chroot}
-al sistema de archivos, ejecutar UPNP en segundo plano, attachear GDB a este proceso y llevar a cabo el cambio de flujo descrito.
+al sistema de archivos, ejecutar UPNP en segundo plano, attachear GDB a este proceso y llevar a cabo el cambio de flujo descrito mediante un script de GDB.
 Esta vez, ya es posible realizar peticiones por el puerto 5000 al servicio a través de CURL (figura \ref{fig:R7000QemuWorking}). Por ahora nos sirve 
-con saber que el servicio es capaz de responder peticiones pero más adelante, crearemos un script para llevar a cabo las peticiones 
+con saber que el servicio está operativo y es capaz de responder peticiones pero más adelante, crearemos un script para llevar a cabo las peticiones 
 SOAP necesarias a través de HTTP para iniciar la funcionalidad de actualización de firmware.
 
 \begin{lstlisting}[language=bash, breaklines]
@@ -605,11 +600,11 @@ SOAP necesarias a través de HTTP para iniciar la funcionalidad de actualizació
 \paragraph{FirmAE}
 Como se comentó en el apartado ''\nameref{estado_del_arte}'', FirmAE fue desarrollado con el objetivo de poder solucionar mediante heurísticas 
 pequeños problemas de configuración como los que hemos experimentado al intentar emular el binario con QEMU básico. Por ello, 
-procederemos a poner esta herramienta en práctica para comprobar si supone alguna mejoría con respecto a la metodología seguida
-por GRIMM\cite{r7000GRIMM}.\bigskip
+procederemos a poner esta herramienta en práctica para comprobar si emular el firmware en su totalidad con esta herramienta supone alguna mejoría con respecto a la metodología seguida
+por GRIMM\cite{r7000GRIMM}.
 
 Iniciar la emulación del firmware con FirmAE es tan simple como indicarle la ruta a la imagen firmware del dispositivo. A continuación, 
-FirmAE analiza dinámicamente el firmware durante aproximadamente diez minutos para intentar detectar problemas de configuración y 
+FirmAE extrae y analiza dinámicamente el firmware durante aproximadamente diez minutos para intentar detectar problemas de configuración y 
 ajustar el entorno de emulación con el objetivo de satisfacer sus necesidades (figura \ref{fig:R7000FirmAE}). 
 
 \begin{figure}[H]
@@ -620,10 +615,10 @@ ajustar el entorno de emulación con el objetivo de satisfacer sus necesidades (
 \end{figure}
 
 Al intentar acceder a la dirección IP local que ha habilitado FirmAE para el portal web del dispositivo, nos encontramos con el proceso de 
-setup original de Netgear (figura \ref{fig:R7000Setup}) el cual no podemos completar porque el resto del proceso de configuración se lleva a cabo
-en la dirección ''www.routerlogin.net'' y se asume que se está utilizando el servidor DNS del router emulado, por lo que no se nos redirige 
+configuración original de Netgear (figura \ref{fig:R7000Setup}) el cual no podemos completar porque el resto del proceso de configuración se lleva a cabo
+en la dirección ''www.routerlogin.net'' y el firmware asume que se está utilizando el servidor DNS del router emulado, por lo que no se nos redirige 
 correctamente a la configuración al visitar dicha dirección. Esto puede solucionarse editando el fichero ''/etc/hosts'' en Linux para que 
-el hostname ''routerlogin.net'' resuelva a la dirección IP asignada por FirmAE. Tras este cambio somos capaces de finalizar el setup inicial 
+el hostname ''routerlogin.net'' resuelva a la dirección IP asignada por FirmAE. Tras este cambio somos capaces de finalizar la configuración inicial 
 y de acceder al panel de control del router (figura \ref{fig:R7000panel}). 
 
 \begin{figure}[H]
@@ -643,7 +638,7 @@ y de acceder al panel de control del router (figura \ref{fig:R7000panel}).
 Por desgracia, aunque el portal web principal parece estar siendo correctamente emulado, solo obtenemos ''empty response'' al realizar peticiones
 por el puerto 5000 al demonio UPNP. Ejecutando manualmente el binario desde la shell proporcionada por FirmAE, observamos que la ejecución 
 entra en un bucle infinito intentando llevar a cabo operaciones en exclusión mutua relacionadas con el uso de variables de la NVRAM 
-(figura \ref{fig:R7000FirmAEupnp}). Dado que el problema sigue presente incluso al usar nvram-faker\cite{nvram}, la emulación del firmware
+(figura \ref{fig:R7000FirmAEupnp}). Dado que el problema sigue presente incluso al usar nvram-faker\cite{nvram} de la misma forma que se ha aplicado anteriormente para QEMU básico, la emulación del firmware
 a través de FirmAE queda descartada.
 
 \begin{figure}[H]
@@ -664,14 +659,13 @@ sobre el código decompilado (figura \ref{fig:UpnpCheckHeader}) con el objetivo 
 El funcionamiento de ''check\_upd\_header()'' puede dividirse en cinco pasos principales. En primer lugar, se comprueba que el firmware tenga 
 la cadena mágica ''*\#\$\textasciicircum'' al inicio mediante una llamada a la función \textit{strcmp} sobre el array de bytes que representa al 
 firmware. Esto es posible debido a que las cadenas de caracteres en C vienen delimitadas por un byte nulo al final y recordemos que los campos de 
-las cabeceras TRX\cite{firmwareFormat} vienen también delimitadas por bytes nulos. En el segundo paso observamos como se utiliza la siguiente 
-sección de la cabecera para obtener el tamaño de esta. El principal problema de este paso y el factor que causa la vulnerabilidad que estamos tratando
-es la ausencia de validación de los datos que están siendo recibidos del exterior los cuales nunca deberían de ser confiados, aún menos cuando 
-ese input va a ser utilizado como parámetro en operaciones con memoria a continuación en el tercer paso. Dado que el usuario desde el exterior
+las cabeceras TRX\cite{firmwareFormat} vienen también delimitadas por bytes nulos. En el segundo paso se utiliza la siguiente 
+sección de la cabecera para consultar el tamaño de esta. El principal problema de este paso y el factor que causa la vulnerabilidad que estamos tratando
+es la ausencia de validación de los datos que están siendo recibidos del exterior los cuales nunca deberían de ser confiados, aún menos cuando van a ser utilizado como parámetro en operaciones con memoria a continuación en el tercer paso. Dado que el usuario desde el exterior
 puede fijar cuantos bytes van a ser copiados sobre el buffer de destino, este podría provocar un desbordamiento de la pila, pudiendo también modificar la 
 dirección de retorno de la función además de diversos registros usados para almacenar variables locales en ARM32 (R4-R11). Por último, en los pasos 
 cuatro y cinco se llevan a cabo comprobaciones adicionales sobre el checksum y el modelo del dispositivo para evitar que el usuario aplique un paquete
-de firmware incorrecto o corrompido.
+de firmware incorrecto o corrupto.
 
 Para que un fuzzer sea capaz de identificar el crash producido por el desbordamiento de la pila, este tendrá que generar un input mutado que respete la 
 cadena mágica inicial además de incluir en el campo del tamaño de la cabecera un valor superior al admitido por el buffer de destino ubicado en la pila.
@@ -690,9 +684,9 @@ creará una versión del script que utilice a Radamsa\cite{radamsa} como generad
 pudiera dar mejores resultados que uno de caja gris en determinadas situaciones.\bigskip
 
 Empezando por integrar el script de Qiling con AFL++, haremos uso de los bindings para Python que proporciona AFL++ como parte de su integración
-con Unicorn. El flujo de ejecución será el mismo, con la diferencia de que el almacenamiento de los bytes del header en memoria se hará ahora 
+con Unicorn (Unicornafl). El flujo de ejecución será el mismo, con la diferencia de que el almacenamiento de los bytes de la cabecera en memoria se hará ahora 
 dentro de un callback que será llamado por AFL++ cada vez que este desee realizar una nueva iteración durante el fuzzing. De esta forma hacemos
-uso de dos hooks, un primer hook que lleva a cabo el cambio del punto de entrada del binario de la misma forma que en el script de emulación y un 
+uso de dos hooks, un primer hook que lleva a cabo el cambio del punto de entrada del binario de la misma manera que en el script de emulación y un 
 segundo que llama a una función encargada de reportar a AFL++ que se ha llegado al punto de inicio para el fuzzing. Por último, adelantamos la 
 dirección en la que finaliza la ejecución del binario modificando ''TARGET\_END\_ADDR'' para evitar realizar las comparaciones del modelo del 
 dispositivo, ya que de todas formas no estaban siendo emuladas correctamente al carecer de una NVRAM. Tener que emular un menor número de 
@@ -752,8 +746,8 @@ hacemos uso de la funcionalidad de diccionarios de AFL++ (flag -x) con un diccio
     $ afl-fuzz -i fuzz_setup/in -o fuzz_setup/out -x dict/dictionary -U -- python3 ./src/dev/fuzz.py @@
 \end{lstlisting}
 
-Viendo que el fuzzing se realiza correctamente y que se descubren nuevos paths a explorar en el código, procedemos a dejar la 
-sesión de fuzzing corriendo hasta que llegue el punto en el que AFL++ no detecte nuevos sucesos durante el fuzzing. AFL++ indica cuándo
+Viendo que el fuzzing se realiza correctamente y que se descubren nuevos caminos a explorar en el código (la variable ''last new find'' se reinicia frecuentemente en AFL++), procedemos a dejar la 
+sesión de fuzzing corriendo hasta que llegue al punto en el que AFL++ no detecte nuevos sucesos durante el fuzzing. AFL++ indica cuándo
 esto sucede a través del color de la variable ''cycles done'', la cual cambia a color verde cuando no se ha alcanzado nuevo código 
 ni se han visto diferencias en el comportamiento de este durante un tiempo. En este caso, el tiempo que se dedicó al proceso de fuzzing 
 fue un total de 20 horas y 31 minutos corriendo en modo paralelo con 3 instancias del fuzzer simultáneas (\ref{fig:R7000parallel}).
