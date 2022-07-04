@@ -179,7 +179,7 @@ indicar a AFL++ que utilice nuestro script en modo Unicorn (figura \ref{fig:Qili
 
 \begin{figure}[H]
     \centering
-    \includegraphics[scale=0.40]{QilingPoCfuzz.png}
+    \includegraphics[scale=0.55]{QilingPoCfuzz.png}
     \caption{Prueba de concepto de fuzzing con Qiling y AFL++.}
     \label{fig:QilingPoCfuzz}
 \end{figure}
@@ -200,7 +200,7 @@ A través de la realización de esta pequeña prueba de concepto ha quedado pate
 con la instrumentación dinámica de binarios, como es el fuzzing. Teniendo en cuenta que este ejemplo se trata solo de una pequeña toma de contacto con la herramienta
 para introducirnos a su uso, donde realmente aprenderemos sobre casos prácticos reales de aplicación de Qiling es en el experimento a continuación.
 
-\section{Identificación de vulnerabilidad real a través de fuzzing: Netgear R7000}\label{r7000_section}
+\section{Identificación de vulnerabilidad real a través de fuzzing: Netgear R7000}
 \subsection{Introducción al dispositivo}
 El Netgear R7000, también conocido como Nighthawk AC1900 es un router WIFI ''inteligente'' lanzado al mercado originalmente en 2013 con una última
 revisión del hardware en 2018 que sigue en venta actualmente. Este producto de la gama de routers premium de Netgear recibe actualizaciones periódicas
@@ -212,7 +212,7 @@ a día de hoy por parte del fabricante y se trata de una elección muy popular e
     \label{fig:r7000}
 \end{figure}
 
-\subsection{Recopilación de información}
+\subsection{Recopilación de información}\label{r7000_section}
 Consultando sus especificaciones técnicas principales 
 encontramos que posee una CPU de 1GHz dual-core, 256MB de RAM, 128MB de memoria flash y soporte para dual-band de 2'4GHz a 600Mbps y de 5GHz a 
 1300Mbps. Aunque estas especificaciones son interesantes a la hora de conocer cómo de restringido respecto a rendimiento está el dispositivo,
@@ -768,7 +768,7 @@ fue un total de 20 horas y 31 minutos corriendo en modo paralelo con 3 instancia
 
 \paragraph{Fuzzing con QEMU full-system}
 Para este caso desarrollaremos un script en Python que nos permita llevar a cabo repetidas peticiones HTTP
-al servicio UPNP mutando exclusivamente el firmware enviado. Para el aspecto de la generación de
+al servicio UPNP mutando exclusivamente el firmware enviado en la petición. Para el aspecto de la generación de
 inputs utilizaremos el fuzzer de caja negra Radamsa\cite{radamsa} debido a su excelente algoritmo 
 de mutación además de estar diseñado para ser fácilmente integrable con scripts. Este experimento nos 
 permitirá comprobar si la información adicional de feedback utilizada en el fuzzing de caja gris es 
@@ -794,7 +794,7 @@ Ambas peticiones serán tratadas más en profundidad a continuación con el desa
     \label{fig:SOAPupdate}
 \end{figure}
 
-La función ''login()'' de nuestro script enviará una petición HTTP al endpoint 
+La función \textit{login()} de nuestro script enviará una petición HTTP al endpoint 
 ''http://127.0.0.1:5000/soap/server\_sa'', indicando en la cabecera que la acción SOAP a realizar es ''SOAPLogin''
 e incluyendo en los datos de la petición el usuario y contraseña por defecto del administrador. Una vez 
 recibida la respuesta, extraemos el valor de la cookie ''sess\_id'' para realizar posteriormente peticiones
@@ -812,15 +812,15 @@ autenticadas.
         return cookie
 \end{lstlisting}
 
-La función ''sendUpdate()'' iniciará el proceso de actualización de firmware mandando la petición correspondiente al 
-UPNP. Para ello, se enviará otra petición al mismo endpoint ahora con la acción SOAP ''UpdateNewFirmware'' en el header,
-incluyendo la cookie de sesión obtenida por la función ''login()'', además del firmware codificado en base64 como parámetro 
+La función \textit{sendUpdate()} iniciará el proceso de actualización de firmware mandando la petición correspondiente al 
+UPNP. Para ello, se enviará otra petición al mismo endpoint ahora con la acción SOAP ''UpdateNewFirmware'' en la cabecera,
+incluyendo la cookie de sesión obtenida por la función \textit{login()}, además del firmware codificado en base64 como parámetro 
 de la petición dentro de un XML. Dado el enfoque de caja negra que estamos aplicando en este caso, la forma en la que comprobamos 
-si la petición realizada ha producido algún efecto adverso en el servicio es realizando un liveness-check con la función ''crashTest()''
+si la petición realizada ha producido algún efecto adverso en el servicio es realizando un ''liveness-check'' con la función \textit{crashTest()}
 cuando el servicio no ha respondido correctamente nuestra petición de actualización de firmware. De esta forma, si se produce algún error
 en la conexión, se realizará una simple petición HTTP al servicio UPNP para verificar si este sigue operativo. En caso de fallar la 
-verificación asumimos que se ha producido un crash, registramos el timestamp y almacenamos el input mutado que lo ha generado con la función
-''dumpCrash()''.
+verificación asumimos que se ha producido un crash, registramos la marca de tiempo y almacenamos el input mutado que lo ha generado con la función
+\textit{dumpCrash()}.
 
 \begin{lstlisting}[language=python, caption=Envío de actualización de firmware al servicio UPNP., captionpos=b,
     frame=single, breaklines, showstringspaces=false]
@@ -861,8 +861,8 @@ verificación asumimos que se ha producido un crash, registramos el timestamp y 
 \end{lstlisting}
 
 Respecto a la generación del XML, la API SOAP requiere que los datos incluidos como parte de la petición han de estar estructurados 
-dentro de un SOAP Envelope. Concretamente, necesitaremos incluir el firmware dentro del cuerpo del envelope indicando también en este 
-la acción de ''UpdateNewFirmware''. Esta funcionalidad queda implementada en la función ''craftXML()''.
+dentro de un ''SOAP Envelope''. Concretamente, necesitaremos incluir el firmware dentro del cuerpo del envelope indicando también en este 
+la acción de ''UpdateNewFirmware''. Esta funcionalidad queda implementada en la función \textit{craftXML()}.
 
 \begin{lstlisting}[language=python, caption=Generación del XML envelope con el firmware para la actualización desde UPNP., captionpos=b,
     frame=single, breaklines, showstringspaces=false]
@@ -882,7 +882,7 @@ la acción de ''UpdateNewFirmware''. Esta funcionalidad queda implementada en la
 
 Por último, debemos gestionar la mutación del firmware para poder llevar a cabo el proceso de fuzzing. Radamsa realiza las 
 mutaciones a partir de una semilla y de un primer input que utilizará como punto de partida. La semilla es un valor numérico 
-que puede ser aleatorio o fijado manualmente si se desea que se generen mutaciones deterministas, por lo que ofreceremos en 
+que puede ser aleatorio o fijado manualmente si se desea generar mutaciones deterministas, por lo que ofreceremos en 
 el script la posibilidad de fijar un valor inicial para la semilla el cual irá siendo incrementado. En resumen, se invocará
 a Radamsa dentro de un bucle infinito utilizando la imagen firmware versión 1.0.11.134 como punto de partida y se utilizará 
 el output generado en cada iteración para realizar una petición de actualización de firmware al servicio UPNP, intentando 
@@ -925,11 +925,11 @@ UPNP al procesar las peticiones.
 \subsubsection{Fuzzing con Qiling y AFL++}
 Usar un script de Qiling con los bindings de python de Unicornafl para la integración con AFL++ ha resultado ser la opción menos efectiva. 
 Aunque la parte de emulación se llevaba a cabo correctamente y con un gran incremento de velocidad gracias a tener que emular solo una función de 
-código, tras las veinte horas y media de fuzzing no se detectó un solo crash ni timeout. Para analizar lo que estaba sucediendo, podemos hacer 
+código, tras las veinte horas y media de fuzzing no se detectó un solo crash ni timeout. Para tratar de identificar el fallo podemos hacer 
 uso de la variable de entorno ''AFL\_DEBUG\_CHILD'' para ver el output del script en cada iteración de fuzzing. Haciendo esto, se detectaron dos 
-problemas en la sesión de fuzzing causados por el mismo problema, uno a la hora de parsear los inputs del corpus y otro a la hora de mutarlos.\bigskip
+problemas en la sesión de fuzzing con el mismo origen, uno a la hora de parsear los inputs del corpus y otro a la hora de mutarlos.\bigskip
 
-Analizando el output de debugging se descubrió que Unicornafl, el componente de AFL++ que 
+Analizando el output de depuración se descubrió que Unicornafl, el componente de AFL++ que 
 aporta la integración con Unicorn (y consecuentemente, Qiling) no gestiona correctamente los inputs que utilizan bytes nulos intercalados 
 entre el resto de bytes. Esto provoca que por ejemplo, para las cabeceras de firmware que utilizamos como parte del corpus sus bytes sean 
 tratados como una string de C y no como bytes, es decir, que a partir del primer byte nulo, el resto de bytes a continuación sean ignorados 
@@ -938,7 +938,7 @@ de la cabecera TRX (la cadena mágica) y no es capaz
 de respetar la separación entre los campos de la cabecera mediante bytes nulos. Esto explica por qué no se ha obtenido ningún crash, ya que 
 nunca se ha dado el caso de haber generado un input con la cadena mágica correcta delimitada por un byte nulo que además tuviera una valor 
 excesivo en el siguiente campo del header para la longitud de este. Este problema ha sido discutido y reconocido por los principales 
-desarrolladores del proyecto a través de Telegram y se ha dejado constancia a mediante la creación de un reporte a modo de issue en su repositorio
+desarrolladores del proyecto a través de Telegram y se ha dejado constancia mediante la creación de un reporte a modo de issue en su repositorio
 de \href{https://github.com/AFLplusplus/unicornafl/issues/13}{Github}. 
 \begin{figure}[H]
     \centering
@@ -971,9 +971,9 @@ azul los bytes que indican el tamaño de la cabecera.
 
 Como hemos comentado, aunque la sesión de fuzzing no ha sido exitosa, Qiling ha dado muy buenos resultados a la hora de emular e instrumentar dinámicamente 
 el binario. Es por ello que de estos resultados surge un pequeño experimento adicional. Esto es, integrar Radamsa con nuestro script de emulación de Qiling
-para tener así un caso extra que nos permita comparar los resultados de fuzzear sobre emulación full-system en comparación con emulación basada en Unicorn 
-manteniendo un mismo fuzzer. Respecto a las modificaciones del script, solo será necesario cambiar desde dónde obtiene el script el firmware por la misma
-integración con Radamsa que hemos aplicado en el script de fuzzing a través de HTTP implementado anteriormente. Sorprendentemente, Radamsa
+para tener así un caso extra que nos permita comparar los resultados de fuzzear utilizando emulación full-system en comparación con emulación basada en Unicorn 
+manteniendo un mismo fuzzer. Respecto a las modificaciones del script, solo será necesario cambiar el origen desde dónde este obtiene el firmware, aplicando ahora la misma
+integración con Radamsa usada en el script de fuzzing HTTP implementado anteriormente. Sorprendentemente, Radamsa
 si que es capaz de identificar y respetar algunos de los campos presentes en las cabeceras, consiguiendo encontrar un crash en el binario
 en aproximadamente 10 segundos haciendo uso del modo determinista y partiendo de la imagen firmware versión 1.0.11.134 (figura \ref{fig:UPNPQilingRadamsaCrash}).
 
@@ -984,15 +984,15 @@ en aproximadamente 10 segundos haciendo uso del modo determinista y partiendo de
     \label{fig:UPNPQilingRadamsaCrash}
 \end{figure}
 
-\subsubsection{Fuzzing con QEMU full-system y Radamsa}
+\subsubsection{Fuzzing HTTP con QEMU full-system y Radamsa}
 Al igual que Radamsa ha sido capaz de identificar el crash emulando el binario con Qiling en el caso anterior, también se ha llegado al mismo 
 crash mediante el script desarrollado previamente que utiliza a Radamsa como fuzzer y va realizando peticiones SOAP a través de HTTP al 
 demonio UPNP corriendo en la VM de QEMU ARM. La emulación tanto del sistema como del servicio ha sido estable durante todo el proceso de
 fuzzing y UPNP era capaz de procesar correctamente las cabeceras del firmware enviado y de detectar si se producía algún fallo en la comprobación
 de la cadena mágica o del checksum al igual que en Qiling. Para encontrar el mismo crash, partiendo de la misma semilla y funcionando en modo 
 determinista, el script necesitó 1 minuto y 17 segundos (figura \ref{fig:UPNPQEMURadamsaCrash}), siendo el XML de la figura \ref{fig:UPNPQEMURadamsaCrashXML}
-el causante del crash. Si comprobamos el estado del demonio en la VM (\ref{fig:UPNPsegfault}) observamos que como era de esperar, se ha producido un segmentation-fault
-en la librería estándar de C (libc.so.0) mientras se realizaba la llamada a \textit{memcpy}.
+el causante del crash. Si comprobamos el estado del demonio en la VM (\ref{fig:UPNPsegfault}) observamos que como era de esperar, se ha producido una violación de segmento
+en la librería estándar de C (libc.so.0) mientras se realizaba la llamada a \textit{memcpy()}.
 
 \begin{figure}[H]
     \centering
@@ -1011,13 +1011,13 @@ en la librería estándar de C (libc.so.0) mientras se realizaba la llamada a \t
 \begin{figure}[H]
     \centering
     \includegraphics[scale=0.6]{UPNPsegfault.png}
-    \caption{Segmentation-fault producido en UPNP durante el proceso de fuzzing HTTP.}
+    \caption{Violación de segmento producida en UPNP durante el proceso de fuzzing HTTP.}
     \label{fig:UPNPsegfault}
 \end{figure}
 
-El gran incremento de tiempo para alcanzar la vulnerabilidad comparado con la aplicación de Radamsa junto a Qiling es comprensible, ya que 
+El gran incremento de tiempo proporcionalmente para alcanzar la vulnerabilidad comparado con la aplicación de Radamsa junto a Qiling es comprensible, ya que 
 no solo es necesario tener en cuenta el overhead de emular el sistema operativo al completo, sino que también las penalizaciones adicionales 
-de rendimiento por emular el servicio al completo y por tener que enviar el firmware a través de peticiones HTTP.
+de rendimiento por emular el servicio en su totalidad y por tener que enviar el firmware a través de peticiones HTTP que han de ser procesadas.
 
 \subsection{Lecciones aprendidas}
 La realización de este experimento nos ha permitido sacar ciertas conclusiones respecto a la emulación y fuzzing de software orientado a IoT.
@@ -1084,11 +1084,11 @@ de Wyze y descargamos la versión 4.36.8.26. El resultado es un fichero
 con extensión ''.bin'' que procederemos a analizar con binwalk\cite{binwalk}. De la misma forma que anteriormente, empezamos consultando 
 la entropía del firmware. Al hacerlo, como podemos observar en la figura \ref{fig:wyzeEntropy}, se muestra una entropía alta con caídas 
 pronunciadas. Esto se debe a que el firmware está mayormente comprimido pero las cabeceras de sus secciones no lo están. Para comprobarlo,
-utilizamos binwalk para obtener un reporte de los elementos contenidos dentro del binario y efectivamente, observamos que las caídas de 
+utilizamos binwalk para obtener un reporte de los elementos contenidos dentro del binario y observamos que las caídas de 
 la entropía dentro de los límites observables por binwalk se corresponden con la dirección de inicio de algunas de las secciones 
 (figura \ref{fig:binwalkWyze}). También podemos ver que se utiliza un sistema de archivos SquashFS y que estamos ante un firmware basado
-en Linux con un kernel versión 3.10.14 el cual fue publicado en 2013 y ha quedado ya considerablemente obsoleto. Por último, ya que se 
-han detectado correctamente los contnidos del firmware, procedemos a su extracción para dar paso a la siguiente sección.
+en Linux con un kernel versión 3.10.14 el cual fue publicado originalmente en 2013 y ha quedado ya considerablemente obsoleto. Por último, ya que se 
+han detectado correctamente los contenidos del firmware, procedemos a su extracción para dar paso a la siguiente sección.
 
 \begin{figure}[H]
     \centering
@@ -1111,7 +1111,7 @@ ayudar con el tratamiento de información en formato JSON. La motivación princi
 la siguiente:
 \begin{itemize}
     \item \textbf{Distribuida como librería}: El hecho de que cJSON esté incluido en el firmware a modo de librería enlazada dinámicamente y no como un ejecutable
-    como sucedía en el anterior experimento, implica la necesidad de tratar un nuevo aspecto del fuzzing, los harness.
+    como sucedía en el anterior experimento implica la necesidad de tratar un nuevo aspecto del fuzzing, los harness.
     \item \textbf{Superficie de ataque}: Los dispositivos IoT se caracterizan entre otras cosas por tratar con órdenes y datos provenientes del exterior
     desde de otros dispositivos. Para comunicar de forma eficiente esta información se suelen utilizar formatos como JSON o XML y por tanto, se 
     requerirán parsers que traten con esos inputs externos. Un fallo en el tratamiento de estos datos puede dar lugar a comportamientos erráticos o 
@@ -1138,7 +1138,7 @@ exportadas por una librería compartida con herramientas como ''objdump'' o ''nm
 la keyword de C ''extern'' para indicar al
 compilador que la función será resuelta en tiempo de enlazado. Además, querremos que las funciones elegidas sean utilizadas por el firmware del dispositivo, lo
 cual podemos comprobar desde el sistema de archivos extraído del firmware haciendo uso de un ''grep'' recursivo para ver qué binarios importan la librería y usando la herramienta ''strings'' para listar
-las funciones de cJSON utilizadas por el binario (en caso de que el binario no haya sido strippeado) (figura \ref{fig:cJSONimports}).
+las funciones de cJSON utilizadas por el binario (en caso de que al binario no se le hayan retirado los símbolos) (figura \ref{fig:cJSONimports}).
 
 \begin{figure}[H]
     \centering
@@ -1160,7 +1160,7 @@ Teniendo todo esto en cuenta, optamos por añadir al harness las siguientes func
     información en formato JSON. 
     \item \textbf{cJSON\_Minify()}: Función encargada de eliminar tokens innecesarios como saltos de línea de un input. Esta función va iterando sobre los
     caracteres de una string en busca de saltos de línea ($\backslash$n), retornos de carro ($\backslash$r) o tabulaciones ($\backslash$t), además de caracteres que 
-    puedan indicar la presencia de comentarios de una o múltiples líneas con el fin de eliminar todo esto y generar una string solo con los datos en formato JSON.
+    puedan indicar la presencia de comentarios de una o múltiples líneas con el fin de eliminarlos y generar una string solo con los datos en formato JSON.
     \item \textbf{cJSON\_Print()}: Función que imprime por pantalla el JSON parseado.
     \item \textbf{cJSON\_PrintBuffered()}: Alternativa a ''cJSON\_Print()'' que utiliza memoria dinámica.
 \end{itemize}
@@ -1209,7 +1209,7 @@ siguiente orden con el compilador GCC de la toolchain de GNU para MIPS(el) y lo 
 \end{figure}
 
 \subsubsection{Fuzzing de cJSON}
-Comenzar la sesión de fuzzing con AFL++ en modo QEMU en sencillo, simplemente creamos un corpus de inputs 
+Comenzar la sesión de fuzzing con AFL++ en modo QEMU es sencillo, simplemente creamos un corpus de inputs 
 con una serie de ficheros con datos en formato JSON e iniciamos AFL++ en modo QEMU (figura \ref{fig:harnessFuzz})
 de la misma forma que se ha realizado en experimentos anteriores pero esta vez indicando con la variable de entorno
 ''AFL\_INST\_LIBS'' que deseamos que se instrumente también la ejecución de código en las librerías compartidas.
@@ -1225,7 +1225,7 @@ AFL++ permite activar el uso de desinfectantes en su modo QEMU utilizando la var
 QASAN hará uso de las capacidades de instrumentación dinámica internas de QEMU para monitorizar operaciones de memoria 
 en binarios que no han sido instrumentados estáticamente y forzar un crash en caso de detectar fallos de memoria. 
 Sorprendentemente, al fijar esta variable de entorno AFL++ no era capaz de iniciar la sesión de fuzzing indicando que 
-todas las ejecuciones realizadas con los inputs iniciales del corpus habían crasheado, como podemos 
+todas las ejecuciones realizadas con los inputs iniciales del corpus habían fallado como podemos 
 observar en la figura \ref{fig:aflQASAN}
 
 \begin{figure}[H]
@@ -1244,12 +1244,12 @@ Durante la realización de este experimento, fue necesario hacer frente a una se
     disco como podíamos comprobar con la herramienta ''iotop'' (figura \ref{fig:iotopBefore}). Mantener estas cifras de forma 
     prolongada durante horas puede suponer un desgaste considerable para el disco pero esto puede ser paliado haciendo uso 
     de un ramdisk. Un ramdisk consiste en asignar una sección de la RAM de un dispositivo para que actúe como si de un disco
-    de almacenamiento se tratara. Para usar un ramdisk con AFL++ solo deberemos de crear un directorio en ''/dev/shm'' y usar la 
+    de almacenamiento se tratara. Para usar un ramdisk con AFL++ solo deberemos crear un directorio en ''/dev/shm'' y usar la 
     variable de entorno ''AFL\_TMPDIR'' al iniciar la sesión de fuzzing para indicar que se desea utilizar el directorio creado para 
     la gestión de ficheros temporales durante el fuzzing. Este directorio especial se trata de un sistema de archivos temporal (tmpfs)
     encontrado en GNU/Linux que implementa el concepto de memoria compartida, utilizando RAM como medio de almacenamiento. Con este 
     cambio se consigue una reducción de escrituras en disco destacable, estando ahora ligeramente por encima de los 10KB/s 
-    (figura \ref{fig:iotopAfter})
+    (figura \ref{fig:iotopAfter}).
     \begin{figure}[H]
         \centering
         \includegraphics[scale=0.75]{iotopBefore.png}
@@ -1274,7 +1274,7 @@ Durante la realización de este experimento, fue necesario hacer frente a una se
     como es de esperar, AFL++ realizaba ciertas mutaciones que carecían de dicho byte al final de la cadena JSON. Para solucionar esto,
     añadiremos manualmente un byte nulo al final de la cadena mutada antes de pasarla a las funciones de cJSON. 
     \item \textbf{Problemas para utilizar QASAN}: En un principio se desconocía el motivo por el cual AFL++ no era capaz de iniciar el 
-    fuzzing al activar QASAN. Sabiendo que todas las ejecuciones iniciales con los inputs del corpus han crasheado pero sin saber el 
+    fuzzing al activar QASAN. Sabiendo que todas las ejecuciones iniciales con los inputs del corpus habían fallado pero sin saber el 
     por qué, iniciamos de nuevo un proceso de triaging en el que buscamos identificar qué origina los crashes. El primer paso es mostrar 
     el output de cada una de las ejecuciones preliminares que realiza AFL++ con la variable de entorno ''AFL\_DEBUG\_CHILD''. Tras hacer esto,
     observamos que en todas las ejecuciones QASAN detecta un heap-buffer-overflow en el código de la librería, concretamente en \textit{libcjson.so.1+0x8dc0}
