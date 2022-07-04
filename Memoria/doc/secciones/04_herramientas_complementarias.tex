@@ -1,0 +1,28 @@
+\chapter{Herramientas complementarias}
+\label{herramientas}
+\section{Introducción}
+En este capítulo trataremos muy brevemente las dos herramientas que han sido implementadas con el objetivo de facilitar el proceso de llevar a cabo los 
+experimentos que hemos comentado. Aún no teniendo relación directa con la temática que estamos tratando, estas herramientas complementarias no solo 
+hacen nuestra labor más sencilla sino que también ayudan enormemente a todo aquel que esté interesado en reproducir el trabajo realizado en este proyecto
+o incluso en poner en práctica nuevos experimentos. Con este objetivo, se decide hacer uso de un gestor de tareas y de un contenedor Docker cuyos contenidos estarán
+publicados junto con el resto del proyecto en nuestro repositorio de \href{https://github.com/Olasergiolas/TFG}{Github}.
+
+\section{Contenedor Docker e integración continua}
+Dado que todo lo relacionado con trabajar con binarios de arquitecturas distintas puede suponer un reto a la hora de gestionar todas las dependencias
+y paquetes requeridos, se decide crear un contenedor Docker que contenga todo lo necesario para compilar, depurar y fuzzear binarios de arquitecturas como 
+ARM o MIPS. En primer lugar recopilamos un listado de herramientas que pudiéramos querer incluir en el contenedor como pueden ser toolchains de arquitecturas
+usadas en dispositivos IoT, 
+fuzzers como Radamsa y AFL++ o algunos frameworks de instrumentación dinámica como Unicorn o Qiling. En segundo lugar, decidimos sobre qué
+imagen basar nuestro contenedor. Principalmente, la decisión se dividía entre expandir la imagen oficial de AFL++ o hacer uso de la imagen de Ubuntu (focal), pero se 
+terminó optando por la segunda opción ya que aunque la imagen de AFL++ viene pre-instalada con un gran número de herramientas que nos son de utilidad, el 
+estar basada en una versión tan reciente de Ubuntu (22.04 Jammy) hace que incluya paquetes y librerías actualmente incompatibles con algunas de las 
+herramientas discutidas. Además, aplicaremos los conocimientos obtenidos en la asignatura de ''Infraestructura Virtual'' para automatizar la publicación de nuestro
+contenedor a DockerHub siempre que se realice un cambio sobre el fichero Dockerfile en la rama principal del repositorio mediante Github Actions,
+el sistema de integración continua de Github.
+
+\section{Gestión de tareas con Task}
+Debido a la complejidad y al gran número de órdenes que será necesario utilizar durante los experimentos, decidimos dejarlas reflejadas a modo de tareas
+en ficheros locales. Estos ficheros serán luego interpretados por un gestor de tareas que se encargará de poner en marcha otras tareas sobre las que haya 
+dependencia además de ejecutar todos los comandos asociados a la tarea. Para esto, usamos Task\cite{task} una alternativa moderna a GNU make escrita en Go con una sintaxis más 
+amigable. Generaremos un fichero Taskfile.yml por cada experimento, los cuales incluirán tareas para llevar a cabo acciones como el compilado de código,
+la configuración del entorno de fuzzing o la puesta en marcha de emuladores.

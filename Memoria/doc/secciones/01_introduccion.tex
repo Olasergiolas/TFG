@@ -1,3 +1,107 @@
 \chapter{Introducción}
+\label{introduccion}
 
-Este proyecto es software libre, y está liberado con la licencia \cite{gplv3}.
+\section{Motivación}
+Hoy en día los fabricantes de productos de todo tipo de
+ámbitos como la medicina, la industria, la seguridad o incluso el hogar, apuestan cada vez 
+más por desarrollar nuevas iteraciones de sus productos con funcionalidades comúnmente agrupadas bajo el 
+adjetivo de inteligentes o ''smart''. Este nuevo paradigma de dispositivos inteligentes capaces de 
+comunicarse entre sí y trabajar de forma coordinada, conocido como el ''Internet de las Cosas'' o IoT por 
+sus siglas en Inglés, ha experimentado un crecimiento descontrolado durante la última década debido 
+principalmente a los avances realizados en campos como las telecomunicaciones o el diseño de procesadores y
+SoCs con una mayor potencia y menor consumo. Tal es el crecimiento que actualmente se espera que la industria del
+IoT pueda alcanzar un valor económico potencial de entre 5.5 y 12.6 miles de millones de dólares para
+2030 \cite{McKinsey}, en comparación con los 1.6 miles de millones del año 2020.\bigskip
+
+Dispositivos no tan novedosos como cámaras IP o routers, al igual que otros más 
+recientes como asistentes de voz, Smart TVs o wearables son todos ejemplos 
+de dispositivos IoT que han conseguido formar una parte esencial de nuestro día a día facilitándonos
+multitud de tareas. Aunque no es secreto que este tipo de dispositivos suelen basar su funcionalidad en 
+la recopilación y comunicación de información que puede llegar a ser considerada sensible, es una realidad 
+que los fabricantes de dichos dispositivos no están realizando una inversión suficiente en su seguridad y 
+la de los datos que manejan. Un claro ejemplo de ello es el hecho de que en Europa, casi la mitad 
+de dispositivos del fabricante TP-Link utiliza credenciales por defecto \cite{Deepak}, sin forzar al usuario 
+a cambiarlas o incluso el gran número de estos que son puestos a la venta a día de hoy utilizando software 
+considerablemente desactualizado y vulnerable como pueden ser versiones del kernel de linux publicadas hace cerca de 
+diez años y ya consideradas ''End Of Life''. Problemas como los mencionados dan lugar a grandes brechas de
+seguridad que explotadas por un atacante pueden tener consecuencias desastrosas. Ejemplo de ello es 
+Mirai\cite{mirai}, un malware que identificaba dispositivos IoT como routers o cámaras IP que usaran credenciales 
+por defecto conocidas para infectarlos y crear una botnet que permitiera realizar ataques DDoS a gran escala.\bigskip
+
+Existen diversas causas que nos pueden ayudar a comprender el estado actual de la seguridad en el campo del IoT.
+En primer lugar, es necesario tener en cuenta que estamos ante una industria relativamente 
+joven, en claro auge y con un gran interés para todo tipo de compañías que quieren introducirse en ella diseñando 
+nuevos productos pero muchas de ellas con la dificultad añadida de carecer de experiencia previa en el sector.
+Esta falta de experiencia puede llevar a tomar decisiones como el realizar lanzamientos apresurados en los que la seguridad del producto no haya 
+sido evaluada adecuadamente o el buscar reducir costes obviando aspectos de seguridad que puedan afectar a 
+la triada CIA (Confidentiality, Integrity, Availability) en productos de gamas de bajo coste donde el margen de beneficio 
+es más estrecho.\bigskip
+
+Respecto a vulnerabilidades software, un factor clave a tener en cuenta es la dificultad en muchos de estos 
+dispositivos para que el usuario final actualice su firmware. Un buen procedimiento de actualización resulta de vital importancia, ya que los altos niveles de complejidad y el gran número de dependencias del software
+que es desarrollado hoy en día convierte la pregunta de \textit{¿Es este producto software vulnerable?} en algo más parecido a 
+\textit{¿Cuánto tiempo tardará su seguridad en verse comprometida?} Esta realidad ejemplifica la necesidad de los fabricantes de 
+proporcionar actualizaciones de firmware con parches de seguridad y de incentivar su instalación de cara al usuario, pero por 
+desgracia, un gran número de sistemas empotrados o carece de actualizaciones ''Over The Air'' (OTA) o su proceso de instalación resulta excesivamente complejo para ser llevado a cabo por el usuario medio, llevando así a una baja adopción por parte del público.
+Por último, cabe destacar también lo sumamente limitado que está en la mayoría de ocasiones el IoT respecto a factores como el
+rendimiento, limitado por los bajos consumos requeridos, la memoria, limitada por costes/tamaño del dispositivo o el tiempo, limitado en sistemas de tiempo real. 
+Se ha demostrado como para un STM32, hacer uso de un algoritmo de cifrado para las comunicaciones puede suponer 
+penalizaciones de hasta 111ms\cite{performance} para cifrar y descifrar 1KB de información usando un algoritmo de cifrado ampliamente conocido como AES\_CBC.\bigskip
+
+Aplicar técnicas que pudieran ayudar a mejorar la seguridad ''automatizando'' la búsqueda de vulnerabilidades presentes en los componentes software 
+de estos dispositivos sería de gran ayuda para facilitar y agilizar el proceso de identificación, análisis y corrección 
+de bugs y fallos de seguridad. El fuzzing es una técnica utilizada para encontrar bugs en software mediante la ejecución de 
+programas de forma repetida, haciendo uso de datos de entrada generados artificialmente a través de mutaciones aplicadas a un
+corpus de inputs válidos. Estos inputs generados suelen distar considerablemente de los inputs para los que el software fue diseñado 
+originalmente, por lo que se busca forzar a este a entrar en estados indefinidos potencialmente problemáticos. Aplicar
+fuzzing a dispositivos IoT se vuelve especialmente interesante debido a que estos trabajan con grandes cantidades de información y mensajes,
+sea información en formato JSON, XML, un mensaje MQTT, se trata de datos que provienen del exterior a través de la red y que en teoría deberían de ser validados 
+de forma exhaustiva para asegurar un correcto funcionamiento del dispositivo incluso si la información recibida no respeta el formato o protocolo 
+utilizado. Por ejemplo, aplicando fuzzing sobre un componente del firmware de un dispositivo IoT encargado de tratar información en formato JSON
+sería posible detectar si este presenta un comportamiento indeterminado en casos concretos como al recibir datos con caracteres especiales, lo cual
+podría dar lugar a vulnerabilidades potenciales como denegación de servicio, corrupción de memoria o filtración de información. Respecto a casos reales
+de vulnerabilidades críticas encontradas en dispositivos IoT a través de fuzzing podemos destacar entre otros los descubrimientos realizados por la firma 
+de ciberseguridad ''Comsecuris'', que gracias a aplicar fuzzing descubrieron una vulnerabilidad en el gestor de red usado en el 
+sistema operativo de los vehículos Tesla la cual permitía a un atacante realizar ejecución de código de forma remota y sin autenticar \cite{TeslaMCU}.\bigskip
+
+Cabe mencionar que emplear fuzzing orientado a IoT también presenta sus propios retos y complicaciones no tan presentes en el fuzzing tradicional, como la ausencia de código fuente público en la mayoría de los casos, las bajas velocidades de ejecución debido a las limitaciones de hardware o la dificultad para emular correctamente el hardware del dispositivo en caso de querer aplicar técnicas de emulación. Estos retos serán discutidos a lo largo del documento.\bigskip
+
+En resumen, el fuzzing es una técnica que ha demostrado excelentes resultados a la hora de identificar bugs 
+que hubieran sido difícilmente encontrados a través de otros medios y que, aún presentando retos difíciles de abordar, resulta de especial interés en
+el campo del IoT ya que ayudaría a paliar la problemática previamente mencionada de las actualizaciones de firmware en sistemas empotrados, gracias a reducir el número de bugs con el que 
+estos salen al mercado, facilitando así una mejora de los estándares de seguridad actuales de la industria. Durante este proyecto trataremos de investigar
+e implementar algunos de los distintos enfoques existentes en la actualidad del fuzzing IoT orientado a código y se intentará proponer 
+soluciones a los retos planteados anteriormente.
+
+\section{Objetivos}
+El objetivo principal de este proyecto, es llevar a cabo una investigación sobre el estado del arte de la aplicación de fuzzing de binarios en dispositivos IoT
+a través de emulación, es decir, ejecutando el código a fuzzear sin requerir el hardware del dispositivo en cuestión. El razonamiento detrás de hacer especial 
+hincapié en soluciones basadas en emulación es que gracias a esto se facilita el despliegue a gran escala de tests de fuzzing IoT ya que las técnicas aplicadas 
+tradicionalmente requieren de un dispositivo IoT sobre el que realizar el fuzzing.
+Además, como objetivos complementarios a cumplir durante la realización de este proyecto se plantea lo siguiente:
+\begin{itemize}
+    \item Poner en práctica los enfoques más punteros y 
+    conceptos relacionados al respecto como el reversing de firmware, emulación de sistema, de binarios y de instrucciones máquina, 
+    desinfectantes de memoria y fuzzing de caja negra y caja gris. Esto se llevará a cabo desarrollando diversas pruebas de concepto a modo de 
+    experimentos que hagan uso de estas tecnologías.
+    \item Comparar la efectividad a la hora de identificar vulnerabilidades mediante fuzzing de los distintos enfoques que serán objeto de estudio. 
+    Se tendrán en cuenta parámetros como diferencias de tiempo hasta alcanzar una misma vulnerabilidad, número de ejecuciones por segundo o estabilidad.
+    \item Proporcionar un entorno de trabajo a modo de contenedor Docker que contenga todas las herramientas necesarias para llevar a cabo tareas de 
+    fuzzing, depuración y emulación de dispositivos IoT (fuzzing de arquitectura cruzada). Esto no solo facilitará la reproducibilidad de las pruebas de 
+    concepto desarrolladas sino que también puede ser de utilidad para todo aquel dispuesto a iniciarse en este campo. Además, se hará uso de 
+    integración continua para automatizar el compilado y publicación de la imagen en DockerHub.
+\end{itemize}
+
+Con la realización de este proyecto también se plantean una serie de objetivos más personales como son el poder utilizar el conocimiento obtenido 
+para colaborar con fabricantes y desarrolladores de software en la búsqueda y reporte de vulnerabilidades presentes en sus productos, además de también
+aportar a la comunidad de software libre generando reportes de problemas y fallos encontrados en las herramientas utilizadas, contribuyendo así
+a mejorar su calidad. 
+
+\section{Estructura del documento}
+Tras realizar una introducción al problema de la seguridad en dispositivos IoT, comentar la motivación que ha impulsado
+el llevar a cabo este proyecto y definir los objetivos planteados durante el primer capítulo ''\nameref{introduccion}'', a continuación en el capítulo 2
+''\nameref{estado_del_arte}'' se llevará a cabo una crítica al estado del arte del fuzzing IoT, tratando no solo las tecnologías y herramientas 
+más utilizadas en el campo de investigación que nos atañe, sino también las distintas problemáticas que surgen con 
+la aplicación de dichas tecnologías, además de tratar soluciones y enfoques alternativos para estas.
+Durante el capítulo 3 ''\nameref{planificacion}'' se procederá a tratar cómo se ha planificado el proyecto y qué metodologías se han seguido. Más adelante en el 
+capítulo 4 ''\nameref{herramientas}'' comentaremos brevemente qué software se ha utilizado para agilizar el desarrollo de los experimentos, en el capítulo 5 ''\nameref{experimentos}'' se documentarán los experimentos propuestos y por último, el capítulo 6 ''\nameref{conclusiones}'' trataremos las conclusiones finales del trabajo tratando también los trabajos futuros que se planea llevar a cabo haciendo uso del conocimiento adquirido durante la realización de este proyecto.
