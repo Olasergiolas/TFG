@@ -23,10 +23,10 @@ la de los datos que manejan. Un claro ejemplo de ello es el hecho de que en Euro
 de dispositivos del fabricante TP-Link utiliza credenciales por defecto \cite{Deepak}, sin forzar al usuario 
 a cambiarlas o incluso el gran número de estos que son puestos a la venta a día de hoy utilizando software 
 considerablemente desactualizado y vulnerable como pueden ser versiones del kernel de linux publicadas hace cerca de 
-diez años y ya consideradas ''End Of Life''. Problemas como los mencionados dan lugar a grandes brechas de
+diez años cuyo período de soporte oficial ya ha finalizado. Problemas como los mencionados dan lugar a grandes brechas de
 seguridad que explotadas por un atacante pueden tener consecuencias desastrosas. Ejemplo de ello es 
 Mirai\cite{mirai}, un malware que identificaba dispositivos IoT como routers o cámaras IP que usaran credenciales 
-por defecto conocidas para infectarlos y crear una botnet que permitiera realizar ataques DDoS a gran escala.\bigskip
+por defecto conocidas para infectarlos y crear una red de bots que permitiera realizar ataques DDoS a gran escala.\bigskip
 
 Existen diversas causas que nos pueden ayudar a comprender el estado actual de la seguridad en el campo del IoT.
 En primer lugar, es necesario tener en cuenta que estamos ante una industria relativamente 
@@ -50,9 +50,9 @@ penalizaciones de hasta 111ms\cite{performance} para cifrar y descifrar 1KB de i
 
 Aplicar técnicas que pudieran ayudar a mejorar la seguridad ''automatizando'' la búsqueda de vulnerabilidades presentes en los componentes software 
 de estos dispositivos sería de gran ayuda para facilitar y agilizar el proceso de identificación, análisis y corrección 
-de bugs y fallos de seguridad. El fuzzing es una técnica utilizada para encontrar bugs en software mediante la ejecución de 
+de errores y fallos de seguridad. El fuzzing es una técnica utilizada para encontrar errores en software mediante la ejecución de 
 programas de forma repetida, haciendo uso de datos de entrada generados artificialmente a través de mutaciones aplicadas a un
-corpus de inputs válidos. Estos inputs generados suelen distar considerablemente de los inputs para los que el software fue diseñado 
+corpus de datos válidos iniciales. Estos datos generados suelen distar considerablemente de aquello para lo que el software fue diseñado 
 originalmente, por lo que se busca forzar a este a entrar en estados indefinidos potencialmente problemáticos. Aplicar
 fuzzing a dispositivos IoT se vuelve especialmente interesante debido a que estos trabajan con grandes cantidades de información y mensajes,
 sea información en formato JSON, XML, un mensaje MQTT, se trata de datos que provienen del exterior a través de la red y que en teoría deberían de ser validados 
@@ -66,9 +66,9 @@ sistema operativo de los vehículos Tesla la cual permitía a un atacante realiz
 
 Cabe mencionar que emplear fuzzing orientado a IoT también presenta sus propios retos y complicaciones no tan presentes en el fuzzing tradicional, como la ausencia de código fuente público en la mayoría de los casos, las bajas velocidades de ejecución debido a las limitaciones de hardware o la dificultad para emular correctamente el hardware del dispositivo en caso de querer aplicar técnicas de emulación. Estos retos serán discutidos a lo largo del documento.\bigskip
 
-En resumen, el fuzzing es una técnica que ha demostrado excelentes resultados a la hora de identificar bugs 
+En resumen, el fuzzing es una técnica que ha demostrado excelentes resultados a la hora de identificar fallos 
 que hubieran sido difícilmente encontrados a través de otros medios y que, aún presentando retos difíciles de abordar, resulta de especial interés en
-el campo del IoT ya que ayudaría a paliar la problemática previamente mencionada de las actualizaciones de firmware en sistemas empotrados, gracias a reducir el número de bugs con el que 
+el campo del IoT ya que ayudaría a paliar la problemática previamente mencionada de las actualizaciones de firmware en sistemas empotrados, gracias a reducir el número de errores de software con el que 
 estos salen al mercado, facilitando así una mejora de los estándares de seguridad actuales de la industria. Durante este proyecto trataremos de investigar
 e implementar algunos de los distintos enfoques existentes en la actualidad del fuzzing IoT orientado a código y se intentará proponer 
 soluciones a los retos planteados anteriormente.
@@ -81,7 +81,7 @@ tradicionalmente requieren de un dispositivo IoT sobre el que realizar el fuzzin
 Además, como objetivos complementarios a cumplir durante la realización de este proyecto se plantea lo siguiente:
 \begin{itemize}
     \item Poner en práctica los enfoques más punteros y 
-    conceptos relacionados al respecto como el reversing de firmware, emulación de sistema, de binarios y de instrucciones máquina, 
+    conceptos relacionados al respecto como la ingeniería inversa de firmware, emulación de sistema, de binarios y de instrucciones máquina, 
     desinfectantes de memoria y fuzzing de caja negra y caja gris. Esto se llevará a cabo desarrollando diversas pruebas de concepto a modo de 
     experimentos que hagan uso de estas tecnologías.
     \item Comparar la efectividad a la hora de identificar vulnerabilidades mediante fuzzing de los distintos enfoques que serán objeto de estudio. 
