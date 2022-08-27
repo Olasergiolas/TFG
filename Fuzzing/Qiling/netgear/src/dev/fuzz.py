@@ -29,7 +29,11 @@ def sandbox(path, rootfs, debug, param_file):
     def start_afl(_ql: Qiling):
         ql_afl_fuzz(_ql, param_file, place_input_callback, exits=[ql.os.exit_point])
     
+    def end_afl(_ql: Qiling):
+        ql.mem.unmap_all()
+    
     ql.hook_address(start_afl, TARGET_FUNC_ADDR)
+    ql.hook_address(end_afl, TARGET_END_ADDR)
 
     try:
         ql.run()
